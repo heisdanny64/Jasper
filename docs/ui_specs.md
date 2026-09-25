@@ -236,9 +236,35 @@ Tapping the **`[ 📁 Files ]`** bottom tab opens the file manager and code edit
 * **`[ 💻 Terminal ]` Drawer Button (Top-Right):**
   * Opens a draggable bottom sheet containing `xterm.js` connected to PRoot.
   * Drag handle allows three snap points: **Peek** (bottom 30%), **Half-Screen** (50%), and **Full Screen** (100%).
-  * **Multi-Session Tabs:** Supports up to **5 concurrent terminal sessions** (`[ 1: bash ] [ 2: vite dev ] [ 3: git ] [ + ]`).
+  * **Multi-Session Tabs:** Supports up to **5 concurrent terminal sessions** (`[ 1: bash ✕ ] [ 2: vite dev ✕ ] [ + ]`).
 * **`[ ▶ Play ]` Preview Button (Top-Right):**
   * Launches the dedicated in-app project Web Preview interface directly from the editor.
+
+### 6.2. macOS-Styled Terminal Chrome & Prompt Layout
+The terminal drawer adopts an aesthetic, professional macOS window styling:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🔴 🟡 🟢  [ 1: bash ✕ ] [ 2: vite dev ✕ ] [ + ]      ⚡ WAKE │
+├─────────────────────────────────────────────────────────────┤
+│ my-portfolio~$ npm run dev                                  │
+│                                                             │
+│   VITE v6.0.1  ready in 240 ms                              │
+│                                                             │
+│   ➜  Local:   http://localhost:3000/                        │
+│   ➜  Network: use --host to expose                          │
+│                                                             │
+│ my-portfolio~$ █                                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Window Controls (Traffic Lights)**:
+  * `🔴` (Red): Closes active session tab (or exits terminal if only 1 tab open).
+  * `🟡` (Yellow): Minimizes / collapses the terminal drawer.
+  * `🟢` (Green): Maximizes terminal to full screen.
+* **Prompt Format**: Clean and structured: `<project_name>~$ ` (e.g. `my-portfolio~$ npm run dev`).
+* **Session Tab Actions**: Each tab features a clear `[✕]` icon. Sessions also terminate upon typing `exit`.
+* **Terminal WakeLock Indicator (`⚡ WAKE`)**: An ambient pill in the header indicating that the Android Terminal WakeLock is actively protecting background servers and CLI processes from sleeping.
 
 ---
 
@@ -250,7 +276,7 @@ Jasper provides a dedicated, touch-first mobile Web Preview inspired by modern b
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ [ 🔄 Refresh ]       [ Home ▾ ]              [ ⛶ Fullscreen ]│
+│ [ 🔄 Reload ]   [ Home ▾ ]      [ ↗ Open ]  [ ⛶ Fullscreen ]│
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │                                                             │
@@ -258,15 +284,18 @@ Jasper provides a dedicated, touch-first mobile Web Preview inspired by modern b
 │                        LIVE APP                             │
 │                  (Iframe / Localhost)                       │
 │                                                             │
-│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ ⚠️ Build Error: TS2339 in Card.tsx       [ Fix ]  [✕] │  │
+│  └───────────────────────────────────────────────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-* **Left Action (`[ 🔄 ]`)**: Hard reload of the preview iframe.
+* **Left Action (`[ 🔄 Reload ]`)**: Hard reload of the preview iframe.
 * **Center Address Bar Pill (`[ Home ▾ ]`)**: Displays the active page title or route. Tapping it opens the **App Pages** drawer.
-* **Right Action (`[ ⛶ ]`)**: Expands the preview into immersive Fullscreen mode.
-* **Zero Visual Clutter**: Clean canvas strictly omitting floating "chat to edit" buttons or intrusive overlays.
+* **External Browser Action (`[ ↗ Open ]`)**: Directly launches the active localhost URL (`http://localhost:3000`) in the user's external Android browser (Chrome, Brave, etc.).
+* **Right Action (`[ ⛶ Fullscreen ]`)**: Expands the preview into immersive Fullscreen mode.
+* **Autonomous Server Auto-Detection**: When a dev server starts inside PRoot, the preview automatically detects the bound port and refreshes to that URL without requiring the user to type or paste addresses.
 
 ### 7.2. "App Pages" Bottom Drawer
 Tapping the center address bar pill slides up a Shadcn bottom sheet:
@@ -336,11 +365,12 @@ Tapping **`[ ⛶ Fullscreen ]`** transitions into an immersive view:
   * **Top Swipe-Down Gesture**: Pulling down from the top edge reveals the floating control bar with a **Minimise icon (`✕`)** and **`[ ← Back to Workspace ]`**.
   * **Android System Back Gesture**: Swiping the screen edge back gesture or tapping the hardware back button cleanly exits fullscreen back to the editor or chat.
 
-### 7.5. Dual Play/Preview Button Architecture
-* **In Project Chat Header**: `[← Projects]  PulseFit (main)  [ ▶ Preview ]  [⚙️ Settings]`  
-  Allows non-technical users to preview their app immediately after a conversational brainstorming or build session.
-* **In Code Editor Header**: `[📁 Files]  src/App.tsx  [💻 Terminal]  [ ▶ Preview ]`  
-  Allows developers to test changes with zero tab-switching while editing code.
+### 7.5. Floating Web Preview Error Toast
+If a compilation failure, Vite overlay error, or unhandled runtime exception occurs while testing the app in the preview:
+* A discreet floating toast card slides into the bottom of the preview canvas:
+  `[ ⚠️ Build Error: TS2339 in Card.tsx   [ Fix ]   [✕] ]`
+* **Swipe to Dismiss / Auto-Dismiss**: The toast can be swiped away or automatically dismisses after 8 seconds so it never obstructs UI testing.
+* **1-Tap Fix**: Tapping **`[ Fix ]`** immediately switches the screen to the Chat tab and dispatches a high-priority diagnostic payload to the agent to heal the error.
 
 ---
 
@@ -348,7 +378,7 @@ Tapping **`[ ⛶ Fullscreen ]`** transitions into an immersive view:
 
 The chat input is implemented as a single, modular component (`ChatInput.tsx`) shared across Global Chat and Project Chat.
 
-### 7.1. Mode Button & Drawer Trigger
+### 8.1. Mode Button & Drawer Trigger
 Instead of a clumsy horizontal switch, the input embeds an interactive badge button:
 `[ Discuss ▾ ]` or `[ Build ▾ ]`.
 
@@ -360,7 +390,7 @@ Instead of a clumsy horizontal switch, the input embeds an interactive badge but
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 7.2. The Mode Drawer
+### 8.2. The Mode Drawer
 Tapping the mode badge slides up a Shadcn drawer:
 
 ```
@@ -382,6 +412,163 @@ Tapping the mode badge slides up a Shadcn drawer:
 ```
 * Selecting a mode immediately updates the badge and closes the drawer.
 * Default mode on fresh conversations: **Discuss**.
+
+### 8.3. Pre-Input Sticky Build Error Banner
+Whenever active build or preview errors exist in the project, an alert banner docks **immediately above the chat input box**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🚨 Build Error in Preview: TS2339 in Card.tsx           │ │
+│ │ [ 🩹 Fix Build Error ]                              [✕] │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [ Discuss ▾ ]  Message Jasper...                  [ ➔ ] │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Position**: Always floats directly on top of the input container so the user is immediately aware of existing failures before typing.
+* **One-Tap Action**: Clicking `[ 🩹 Fix Build Error ]` activates the agent in Build mode to resolve the bug immediately.
+* **Auto-Healing on Prompt Submission**: If the user dismisses the banner and types a new prompt (e.g. *"Add user avatars to the card"*), Jasper automatically runs a **Two-Phase Turn** (heals the build error in Phase 1, then creates the avatars in Phase 2).
+
+### 7.6. Dual Play/Preview Button Architecture
+* **In Project Chat Header**: `[← Projects]  PulseFit (main)  [ ▶ Preview ]  [⚙️ Settings]`  
+  Allows non-technical users to preview their app immediately after a conversational brainstorming or build session.
+* **In Code Editor Header**: `[📁 Files]  src/App.tsx  [💻 Terminal]  [ ▶ Preview ]`  
+  Allows developers to test changes with zero tab-switching while editing code.
+
+---
+
+## 8. Reusable Chat Input & Discuss/Build Mode Drawer
+
+The chat input is implemented as a single, modular component (`ChatInput.tsx`) shared across Global Chat and Project Chat.
+
+### 8.1. Mode Button & Drawer Trigger
+Instead of a clumsy horizontal switch, the input embeds an interactive badge button:
+`[ Discuss ▾ ]` or `[ Build ▾ ]`.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [ Discuss ▾ ]  Message Jasper...                  [ ➔ ] │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.2. The Mode Drawer
+Tapping the mode badge slides up a Shadcn drawer:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚙️ SELECT EXECUTION MODE                                     │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (●) 💬 Discuss                                          │ │
+│ │     Ideate, brainstorm, plan, and analyze architecture   │ │
+│ │     without touching files or running bash commands.      │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (○) ⚡ Build                                            │ │
+│ │     Full autonomous agency. Write code, execute         │ │
+│ │     commands in PRoot, and manage project files.        │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+* Selecting a mode immediately updates the badge and closes the drawer.
+* Default mode on fresh conversations: **Discuss**.
+
+### 8.3. Pre-Input Sticky Build Error Banner
+Whenever active build or preview errors exist in the project, an alert banner docks **immediately above the chat input box**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🚨 Build Error in Preview: TS2339 in Card.tsx           │ │
+│ │ [ 🩹 Fix Build Error ]                              [✕] │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [ Discuss ▾ ]  Message Jasper...                  [ ➔ ] │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Position**: Always floats directly on top of the input container so the user is immediately aware of existing failures before typing.
+* **One-Tap Action**: Clicking `[ 🩹 Fix Build Error ]` activates the agent in Build mode to resolve the bug immediately.
+* **Auto-Healing on Prompt Submission**: If the user dismisses the banner and types a new prompt (e.g. *"Add user avatars to the card"*), Jasper automatically runs a **Two-Phase Turn** (heals the build error in Phase 1, then creates the avatars in Phase 2).
+
+### 8.4. Global Concurrency Lock Badge (`[ 🔒 Agent Busy in <Project> ]`)
+When an autonomous Build Mode task is running in Project A, and the user navigates to Global Chat or Project B:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [ 🔒 Agent Busy in "PulseFit" ]  Message Jasper... [ ➔ ] │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Discuss Mode Remains Unlocked**: The user can continue chatting, asking technical questions, or brainstorming anywhere in the app.
+* **Transparent Feedback (Zero Silent Greying)**: If the user attempts to switch to Build Mode in another workspace while a task is running, Jasper shows an informative popover:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🔒 Agent Currently Active in "PulseFit"                     │
+├─────────────────────────────────────────────────────────────┤
+│ Jasper is currently running a build task in PulseFit.       │
+│ To protect mobile CPU and memory, only one build task can   │
+│ run at a time.                                              │
+│                                                             │
+│ ┌───────────────────────────┐ ┌───────────────────────────┐ │
+│ │        Stay Here          │ │      View Active Task     │ │
+│ └───────────────────────────┘ └───────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+* **Teleport Action**: Tapping `[ View Active Task ]` instantly navigates the user back to the active project's chat and live agent timeline.
+
+### 8.5. Chat Mission Card Red Team Visuals & Pre-Push Checkpoint
+
+#### A. Interactive Mission Card Red Team Feedback
+During autonomous tasks, Blue Team and Red Team operations appear sequentially inside the Chat Mission Card with distinctive visual indicators:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🚀 Task: Implement User Profile & Settings API              │
+│ Status: Active • Step 4 of 5                                │
+├─────────────────────────────────────────────────────────────┤
+│ [✓] 🔵 1. Architect: Planned endpoints & database schema    │
+│ [✓] 🔵 2. Coder: Scaffolding /api/user/profile.ts           │
+│ [✓] 🔵 3. Runtime: TypeScript build passed (0 errors)       │
+│ [⏳] 🔴 4. Red Team: 10-Agent Swarm auditing security       │
+│     └─ 🛡️ Auto-patched: Added authorization guard to route  │
+│ [ ] 5. Git checkpoint commit                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Color Cues**:
+  * `🔵` indicates Blue Team construction tasks (Planning, Scaffolding, UI, Build).
+  * `🔴` indicates Red Team security auditing (Surface Graphing, Injection, IDOR, Secrets).
+* **Auto-Patch Indication**: When Agent 10 synthesizes and applies a patch, a nested green shield note appears: `🛡️ Auto-patched: <summary of fix>`.
+* **Zero UI Interruption**: No separate security drawers, modal popups, or manual triage checklists during autonomous builds.
+
+#### B. Pre-Push Security Checkpoint Dialog (Manual Sessions)
+If a developer manually enters code in the Code Editor or executes a command in the Terminal that attempts to `git push` a hardcoded secret or unhashed credential:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚠️ Security Checkpoint                                      │
+├─────────────────────────────────────────────────────────────┤
+│ Hardcoded secret detected in `src/config.ts`:               │
+│ Potential OpenAI API key on line 14.                        │
+│                                                             │
+│ ┌───────────────────────────┐ ┌───────────────────────────┐ │
+│ │        Push Anyway        │ │    Move to .env (Fix)     │ │
+│ └───────────────────────────┘ └───────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Non-Blocking Choice**: Offers a 1-tap automated resolution (`Move to .env (Fix)`) or lets the user bypass if it is an intended mock string (`Push Anyway`).
 
 ---
 
@@ -728,6 +915,44 @@ Users can create as many combos as they wish to ensure uninterrupted coding:
 Displays the integration status with developer environments:
 * **Google Antigravity**: Session authenticated (`🟢 Connected • Models provisioned via Antigravity`).
 * **GitHub Models**: Token authenticated (`🟢 Connected • Access to hosted GitHub catalog`).
+
+---
+
+## 14. Project Settings: Code Philosophy Configuration
+
+Located in `[⚙️ Project Settings] ➔ Agent & Compilation ➔ Code Philosophy`:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📐 CODE PHILOSOPHY                                          │
+├─────────────────────────────────────────────────────────────┤
+│ Governs how strictly Jasper avoids unnecessary boilerplate, │
+│ duplicate helpers, and redundant dependencies.              │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (○) 🟢 Lite                                             │ │
+│ │     Standard clean code. Minimal constraints on         │ │
+│ │     scaffolding and utility packages.                   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (●) 🔵 Full (Default)                                   │ │
+│ │     Disciplined engineering. Enforces native platform   │ │
+│ │     APIs, reuses existing code from project graph, and  │ │
+│ │     writes minimal viable code.                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (○) 🟣 Ultra                                            │ │
+│ │     Radical minimalism. Blocks all new dependencies     │ │
+│ │     without manual approval, co-locates code to single  │ │
+│ │     files, and aggressively eliminates all indirection. │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Interactive Radio Group**: Standard Android touch target (min 48px height per option) with immediate state persistence to `.jasper/project-config.json`.
+* **Zero UI Noise Policy**: The Code Philosophy rules execute silently inside the agent runtime. The Chat Mission Card does not display noisy metrics or bragging text, keeping the interface completely focused on the developer's goals.
 
 ---
 

@@ -37,6 +37,20 @@
    - 6.1. Static AST Route Scraper
    - 6.2. Dynamic Iframe Loopback Synchronization
 7. [Mobile PRoot Terminal & Multi-Session PTY Multiplexer](#7-mobile-proot-terminal--multi-session-pty-multiplexer)
+8. [Autonomous Dev Server Lifecycle & PTY Port Sniffer](#8-autonomous-dev-server-lifecycle--pty-port-sniffer)
+9. [Real-Time Error Interception & Self-Healing Pipeline](#9-real-time-error-interception--self-healing-pipeline)
+10. [Dual WakeLock & Android Persistent Foreground Architecture](#10-dual-wakelock--android-persistent-foreground-architecture)
+11. [Red Team Swarm Architecture & Automated Self-Hardening (Ported from Strix)](#11-red-team-swarm-architecture--automated-self-hardening-ported-from-strix)
+    - 11.1. Dual-Swarm Sequential Pipeline
+    - 11.2. The 10-Agent Red Swarm Specialization Matrix
+    - 11.3. PRoot Sandbox Behavioral Validation (Zero False Positives)
+    - 11.4. Automated Defensive Patch Synthesis & AST Rewriting
+    - 11.5. Pre-Push Security Interception Hook
+12. [Code Philosophy Engine & Decision Ladder (Ported from Ponytail)](#12-code-philosophy-engine--decision-ladder-ported-from-ponytail)
+    - 12.1. The 5-Rung Decision Ladder Algorithmic Contract
+    - 12.2. Graphify Knowledge Graph Deduplication Hook
+    - 12.3. Platform Standard API Substitution Heuristics
+    - 12.4. Intensity Profile State Machine (`Lite`, `Full`, `Ultra`)
 
 ---
 
@@ -336,4 +350,374 @@ Jasper provides a native Linux development environment on Android without requir
 
 ---
 
+## 8. Autonomous Dev Server Lifecycle & PTY Port Sniffer
+
+To eliminate manual terminal interaction for non-technical users while providing complete flexibility for developers, Jasper implements an automated dev server daemon and stream sniffer.
+
+### 8.1. Autonomous Startup Pipeline
+1. **Framework Fingerprinting**:
+   * Inspects `package.json` for scripts (`dev`, `start`, `serve`) or framework signatures (Vite, Next.js, Nuxt, Astro, SvelteKit, Remix).
+   * For Python projects, scans for `manage.py`, `app.py`, `uvicorn`, `fastapi`, or `flask`.
+2. **Dedicated Background PTY Session**:
+   * Launches the server in a designated background PTY channel (`Session 0: Dev Server Daemon`).
+   * Passes `--host 0.0.0.0` or `--host localhost` to ensure proper socket binding within PRoot.
+3. **Health Check Probing**:
+   * Jasper's internal client performs periodic HTTP `HEAD /` requests to verify that the server is ready before signaling the UI.
+
+### 8.2. Stream Port Sniffer Engine
+Whenever *any* terminal session outputs text (whether started autonomously or typed manually by a developer), the sniffer regex processes chunks in real time:
+
+```ts
+const PORT_BIND_REGEX = /(?:https?:\/\/)?(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(?<port>\d{3,5})/i;
+
+function onPtyData(chunk: string) {
+  const match = chunk.match(PORT_BIND_REGEX);
+  if (match?.groups?.port) {
+    const detectedPort = parseInt(match.groups.port, 10);
+    // Ignore internal ports like llama.cpp (8080)
+    if (detectedPort !== 8080) {
+      previewManager.bindPort(detectedPort);
+      eventBus.emit('dev-server-ready', { url: `http://localhost:${detectedPort}` });
+    }
+  }
+}
+```
+
+* **Instant Preview Synchronization**: The Web Preview iframe immediately binds to `http://localhost:<detectedPort>` without requiring the user to type or paste a URL.
+* **External Link Provider**: Publishes the URL to the preview header `[ ↗ Open ]` action and ambient chat link.
+
+---
+
+## 9. Real-Time Error Interception & Self-Healing Pipeline
+
+Jasper monitors runtime execution across three surfaces to intercept and repair errors before they compound.
+
+### 9.1. Error Interception Surfaces
+1. **Terminal Stderr & Process Exits**: Captures compilation crashes from `tsc`, `esbuild`, `webpack`, `vite`, and Python tracebacks.
+2. **Vite / Next.js HMR Error WebSocket**: Intercepts Vite HMR overlay messages (`vite:ws` `error` payload) over the local loopback WebSocket.
+3. **Iframe `window.onerror` Bridge**: Injects a lightweight snippet into the preview iframe to capture client-side unhandled promise rejections and React render errors.
+
+### 9.2. UI Notification Dispatch
+* Intercepted errors are formatted into a normalized structure: `{ file, line, column, code, message }`.
+* Dispatches simultaneous notifications to:
+  * **Preview Floating Toast**: Slides in over the preview canvas with `[ Fix ]` action.
+  * **Pre-Chat-Input Sticky Banner**: Persistently docks directly above the chat input container:
+    `[ 🚨 Build Error in Preview: <brief error>  [ 🩹 Fix Build Error ]  [✕] ]`.
+
+### 9.3. Two-Phase Turn Self-Healing Algorithm
+When the user submits a new prompt while an error is active (or taps `[ Fix ]`):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 USER SUBMITS NEW PROMPT                     │
+│                (or taps [ Fix Build Error ])                │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+               Active Unresolved Build Error?
+                               │
+            ┌──────────────────┴──────────────────┐
+            │ YES                                 │ NO
+            ▼                                     ▼
+┌──────────────────────────────────────┐ ┌────────────────────┐
+│ PHASE 1: SELF-HEALING TURN           │ │ STANDARD TURN      │
+│ • Loads AST context of failing file  │ │ • Executes prompt  │
+│ • Applies surgical patch             │ └────────────────────┘
+│ • Re-compiles to verify fix          │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│ PHASE 2: FEATURE EXECUTION TURN      │
+│ • Executes original user request     │
+│ • Builds on clean, verified codebase │
+└──────────────────────────────────────┘
+```
+
+---
+
+## 10. Dual WakeLock & Android Persistent Foreground Architecture
+
+Mobile operating systems enforce aggressive CPU throttling and process termination for background apps. Jasper solves this through dual WakeLock coordination.
+
+### 10.1. Android Native WakeLock Engine
+Implemented via a Capacitor Android native bridge:
+
+```java
+public class WakeLockPlugin extends Plugin {
+    private PowerManager.WakeLock agentWakeLock;
+    private PowerManager.WakeLock terminalWakeLock;
+
+    public void acquireAgentWakeLock(PluginCall call) {
+        PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        agentWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Jasper::AgentWakeLock");
+        agentWakeLock.acquire();
+        startForegroundService("Jasper Agent Running", "Autonomous sub-agent executing tasks...");
+    }
+
+    public void acquireTerminalWakeLock(PluginCall call) {
+        PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        terminalWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Jasper::TerminalWakeLock");
+        terminalWakeLock.acquire();
+        startForegroundService("Jasper Terminal Active", "Background dev server & processes running...");
+    }
+}
+```
+
+### 10.2. Lifecycle Management Rules
+1. **Agent WakeLock**:
+   * **Acquired**: When the user sends a prompt in Build mode or when a background task begins.
+   * **Foreground Notification**: Shows live progress (e.g. `Step 2/4: Running Vitest`), and a `[ Pause Agent ]` action.
+   * **Cross-Project Roaming**: Ensures tasks run uninterrupted even if the user navigates to other projects or switches to another Android app.
+   * **Released**: When the task finishes (or pauses); fires a local completion notification with vibration: `✅ Task Finished: ...`.
+2. **Terminal WakeLock**:
+   * **Acquired**: Automatically when the first terminal session tab is opened.
+   * **Maintained**: Remains held as long as at least one terminal tab is open (even if minimized).
+   * **Released**: Only when all terminal tabs are closed (via `exit` command or `[✕]` tab button) and the agent is idle.
+   * **Result**: Zero unexpected dev server crashes when the user switches apps or locks their screen.
+
+### 10.3. Global Concurrency Lock & Cross-Project State Coordination
+To protect limited mobile RAM (e.g. 6GB devices) against concurrent compiler processes and Android Low Memory Killer (LMK) eviction, Jasper enforces a global singleton execution coordinator:
+
+```ts
+interface ActiveTaskState {
+  projectId: string;
+  projectName: string;
+  taskId: string;
+  step: string;
+  timestamp: number;
+}
+
+class ConcurrencyCoordinator {
+  private activeTask: ActiveTaskState | null = null;
+
+  public requestBuildLock(projectId: string, projectName: string, taskId: string): boolean {
+    if (this.activeTask && this.activeTask.projectId !== projectId) {
+      return false; // Concurrency lock active in another project
+    }
+    this.activeTask = { projectId, projectName, taskId, step: 'Initializing', timestamp: Date.now() };
+    eventBus.emit('build-lock-acquired', this.activeTask);
+    nativeBridge.acquireAgentWakeLock();
+    return true;
+  }
+
+  public releaseBuildLock(projectId: string) {
+    if (this.activeTask?.projectId === projectId) {
+      this.activeTask = null;
+      eventBus.emit('build-lock-released');
+      nativeBridge.releaseAgentWakeLock();
+    }
+  }
+
+  public getActiveTask(): ActiveTaskState | null {
+    return this.activeTask;
+  }
+}
+```
+
+* **Discuss Mode Bypass**: Discuss mode requests do not spawn compiler tools, execute bash commands, or alter files—allowing users to freely converse, plan, and ask questions anywhere while an agent builds in the background.
+* **Reactive UI Synchronization**: The `build-lock-acquired` and `build-lock-released` events automatically update all chat inputs, switching secondary project inputs into the `[ 🔒 Agent Busy in "<Project>" ]` state with zero polling.
+
+---
+
+## 11. Red Team Swarm Architecture & Automated Self-Hardening (Ported from Strix)
+
+Jasper integrates the core architectural principles of Strix (`usestrix/strix`), translating multi-agent adversarial penetration testing into a native, automated defensive code-hardening pipeline.
+
+### 11.1. Dual-Swarm Sequential Pipeline
+Every build task executes as a two-phase swarm:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 AUTONOMOUS DUAL-SWARM FLOW                  │
+├─────────────────────────────────────────────────────────────┤
+│ 🔵 PHASE 1: BLUE TEAM (CONSTRUCTION)                        │
+│ • Architect Agent ➔ Coder Agent(s) ➔ Runtime Agent          │
+│ • Validates TypeScript compilation & local dev server run   │
+│                                                             │
+│                          ▼                                  │
+│                 [ Build Succeeded ]                         │
+│                          ▼                                  │
+│                                                             │
+│ 🔴 PHASE 2: RED TEAM (ADVERSARIAL AUDITING - STRIX)         │
+│ • Spawns 10 specialized Red Team sub-agents in parallel     │
+│ • Agents 1–9 evaluate static AST, routes, configs, and deps │
+│ • Agent 10 performs dynamic loopback validation in PRoot    │
+│ • If vulnerability confirmed: Agent 10 synthesizes patch    │
+│ • Re-compiles to verify clean build                         │
+│                                                             │
+│                          ▼                                  │
+│ 🏁 TASK COMPLETE: Verified, Hardened & Committed            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 11.2. The 10-Agent Red Swarm Specialization Matrix
+
+| Agent ID | Specialization Role | Inspection Domain & Heuristics |
+| :--- | :--- | :--- |
+| **Agent 1** | **Lead Orchestrator & Surface Grapher** | Ingests AST, parses route trees (Express, Next.js, FastAPI), and generates a directed graph of all external inputs and database boundaries. |
+| **Agent 2** | **Route & API Enumerator** | Scans for untyped route parameters, debug endpoints (`/debug`, `/admin`, `/test`), and unprotected REST/GraphQL methods. |
+| **Agent 3** | **Secret & Credential Auditor** | Scans commit staging, `.env` files, and client-side bundles using high-entropy regex to detect leaked API keys (AWS, OpenAI, Stripe). |
+| **Agent 4** | **Config & Headers Auditor** | Checks CORS origins (`Access-Control-Allow-Origin: *`), Content Security Policy (CSP), Cookie security flags (`HttpOnly; Secure; SameSite=Lax`). |
+| **Agent 5** | **Injection Specialist** | Detects raw SQL/NoSQL query concatenation, unsafe template literals, and unsanitized inputs passed to `child_process.exec()` / `os.system()`. |
+| **Agent 6** | **Broken Access Control & IDOR** | Tests horizontal and vertical authorization: verifies whether routes accessing `/api/resource/:id` validate session ownership before returning records. |
+| **Agent 7** | **Auth & Session Hardener** | Audits brute-force protections: checks for missing rate-limiting on login/password-reset endpoints, bcrypt work factors, and token expiration. |
+| **Agent 8** | **Client-Side & SSRF Specialist** | Analyzes React code for unsanitized `dangerouslySetInnerHTML`, open client redirects, and server-side request forgery in outbound HTTP fetches. |
+| **Agent 9** | **Supply Chain & CVE Auditor** | Compares `package-lock.json` and `pnpm-lock.yaml` dependencies against live vulnerability advisories (OSV.dev / GitHub Advisory Database). |
+| **Agent 10** | **Dynamic Validator & Patch Synthesizer** | Fires simulated local loopback requests in PRoot to verify whether flagged issues are genuinely exploitable (zero false positives), then outputs the defensive patch. |
+
+### 11.3. PRoot Sandbox Behavioral Validation (Zero False Positives)
+To eliminate the flood of false positives produced by conventional static analyzers, Agent 10 uses Strix's **dynamic behavioral validation**:
+* Runs exclusively against the isolated internal loopback interface (`http://localhost:<detectedPort>`) inside the user's PRoot container.
+* Sends targeted boundary payloads (e.g. malformed JSON payloads, IDOR parameter substitutions, boundary probe values).
+* Evaluates the server's response:
+  * **False Positive**: Endpoint cleanly handles validation, returns `400 Bad Request` or `401 Unauthorized` without leaking internal stack traces. Issue is dismissed.
+  * **Confirmed Vulnerability**: Endpoint returns `500 Internal Server Error` exposing database schemas, or returns unauthorized records (`200 OK`). Issue is escalated for immediate patching.
+
+### 11.4. Automated Defensive Patch Synthesis & AST Rewriting
+When an issue is confirmed, Agent 10 synthesizes a targeted, defensive AST patch without disrupting the user's business logic:
+
+```ts
+interface SecurityPatch {
+  vulnerabilityType: 'SQLi' | 'IDOR' | 'RateLimit' | 'SecretLeak' | 'XSS';
+  targetFile: string;
+  lineRange: [number, number];
+  diff: string;
+  rationale: string;
+}
+
+// Example patch generation: Raw SQL -> Parameterized Query
+const patch: SecurityPatch = {
+  vulnerabilityType: 'SQLi',
+  targetFile: 'src/routes/users.ts',
+  lineRange: [24, 25],
+  diff: `- const user = await db.query(\`SELECT * FROM users WHERE id = '\${req.params.id}'\`);
++ const user = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);`,
+  rationale: 'Converted string concatenation query into parameterized statement to prevent SQL injection.'
+};
+```
+
+* **Immediate Application**: Jasper applies the unified diff directly to the project filesystem.
+* **Compilation Gate**: Re-runs `tsc --noEmit` and tests to verify that the patch introduced zero syntax or runtime regressions.
+
+### 11.5. Pre-Push Security Interception Hook
+For manual developer coding sessions in the editor or terminal, Jasper injects a lightweight pre-push git hook:
+* **Trigger**: Intercepts `git push` commands.
+* **Checks**: Scans git staging diffs for high-entropy tokens and private keys (`sk-`, `ghp_`, `AKIA`, private PEM keys).
+* **Behavior**:
+  * If a secret is detected, pauses the push and renders the non-blocking UI alert:
+    `[ ⚠️ Security Checkpoint: Secret detected in src/config.ts ] [ Push Anyway ] [ Move to .env (Fix) ]`.
+  * Tapping `[ Move to .env (Fix) ]` extracts the secret to `.env`, adds `.env` to `.gitignore`, and substitutes `process.env.SECRET_NAME` in the source file automatically.
+
+---
+
+## 12. Code Philosophy Engine & Decision Ladder (Ported from Ponytail)
+
+To prevent the common failure mode of AI-generated code bloat, premature abstraction, and redundant package churn on resource-constrained mobile hardware, Jasper implements the **Decision Ladder** engine derived from the Ponytail framework (`DietrichGebert/ponytail`).
+
+### 12.1. The 5-Rung Decision Ladder Algorithmic Contract
+The Blue Team's Architect and Coder agents operate under a system prompt directive that forces sequential reasoning through five distinct hurdles before generating any code:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 THE 5-RUNG DECISION LADDER                  │
+├─────────────────────────────────────────────────────────────┤
+│ Rung 1: 🛑 Necessity Check                                   │
+│         Does the prompt solve a genuine problem? Can an     │
+│         existing flag, prop, or parameter achieve this?     │
+│                               ▼                             │
+│ Rung 2: 🔍 Codebase Reuse Check (via Graphify)              │
+│         Does a utility, helper, hook, or schema already     │
+│         exist in the AST index? (Mandatory import)          │
+│                               ▼                             │
+│ Rung 3: 🌐 Platform & Standard Library Check                │
+│         Can modern Web APIs (`fetch`, `crypto`, `Intl`,     │
+│         `structuredClone`) solve this without third-party   │
+│         dependencies?                                       │
+│                               ▼                             │
+│ Rung 4: 📦 Dependency Scrutiny                              │
+│         Can an already-installed package in `package.json`   │
+│         handle it? (Hard block on `npm install` for trivial │
+│         utilities).                                         │
+│                               ▼                             │
+│ Rung 5: ✍️ Minimal Viable Implementation                    │
+│         Write the leanest possible code: inline over        │
+│         indirection, co-location over micro-files, and      │
+│         zero premature abstraction factories.               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 12.2. Graphify Knowledge Graph Deduplication Hook
+Before a Coder Agent writes a helper function (e.g. date formatting, debouncing, class merging), it executes an AST graph lookup against the project index:
+
+```ts
+interface CodebaseDeduplicationCheck {
+  intent: string;
+  candidateSymbols: string[];
+}
+
+// Blue Team Architect runs deduplication query:
+const check = await projectGraph.searchSymbols({
+  query: 'debounce | throttle | formatCurrency | useAuth',
+  kinds: ['function', 'hook', 'class']
+});
+
+if (check.matches.length > 0) {
+  // Decision Ladder Rung 2: Force reuse
+  coderAgent.injectContext({
+    directive: `REUSE_EXISTING_SYMBOL: Import \`${check.matches[0].name}\` from \`${check.matches[0].filePath}\`. Do NOT generate a duplicate helper.`
+  });
+}
+```
+
+### 12.3. Platform Standard API Substitution Heuristics
+Jasper maintains an internal substitution dictionary injected into the agent runtime to replace common bloated npm packages with modern native equivalents:
+
+| Redundant npm Package | Native Modern JavaScript / Web Standard Replacement |
+| :--- | :--- |
+| `uuid` | `crypto.randomUUID()` |
+| `lodash/cloneDeep` | `structuredClone(obj)` |
+| `axios` | Native `fetch()` with `AbortController` |
+| `dayjs` / `moment` | Native `Intl.DateTimeFormat` and `Date` APIs |
+| `classnames` / `clsx` | Template literals or array join: `[cond && 'cls'].filter(Boolean).join(' ')` |
+| `query-string` | Native `URLSearchParams` |
+
+### 12.4. Intensity Profile State Machine (`Lite`, `Full`, `Ultra`)
+Managed via `[⚙️ Project Settings] ➔ Code Philosophy`:
+
+```ts
+export type CodePhilosophyMode = 'lite' | 'full' | 'ultra';
+
+export interface CodePhilosophyPolicy {
+  blockRedundantNpmPackages: boolean;
+  enforceGraphifyReuse: boolean;
+  disallowNewDependenciesWithoutPrompt: boolean;
+  enforceSingleFileCoLocation: boolean;
+}
+
+export const CODE_PHILOSOPHY_POLICIES: Record<CodePhilosophyMode, CodePhilosophyPolicy> = {
+  lite: {
+    blockRedundantNpmPackages: false,
+    enforceGraphifyReuse: true,
+    disallowNewDependenciesWithoutPrompt: false,
+    enforceSingleFileCoLocation: false,
+  },
+  full: { // DEFAULT
+    blockRedundantNpmPackages: true,
+    enforceGraphifyReuse: true,
+    disallowNewDependenciesWithoutPrompt: false,
+    enforceSingleFileCoLocation: false,
+  },
+  ultra: {
+    blockRedundantNpmPackages: true,
+    enforceGraphifyReuse: true,
+    disallowNewDependenciesWithoutPrompt: true, // Blocks npm i until confirmed
+    enforceSingleFileCoLocation: true,          // Maximize co-location
+  }
+};
+```
+
+---
+
 *Document compiled and verified for Jasper System Logic & Technical Implementation.*
+

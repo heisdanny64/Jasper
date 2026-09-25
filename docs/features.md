@@ -235,6 +235,90 @@ To solve complex engineering and operational challenges, Jasper coordinates a sp
   ```
 * Detailed logs for every sub-agent remain accessible inside an expandable Inspector Drawer.
 
+### 6.3. Autonomous Dev Server Lifecycle & Terminal Port Auto-Detection
+* **Zero-Terminal Friction**: Unlike older mobile environments that require users to open a terminal and run `npm run dev` manually, Jasper's agent automatically detects project frameworks and launches the development server in a managed background daemon upon task completion.
+* **Automatic PTY Port Sniffer**:
+  * Whenever a dev server is started (whether by the agent or manually by the user in the terminal), Jasper's PTY sniffer scans terminal stdout for local host bindings (`http://localhost:<port>`, `http://127.0.0.1:<port>`, `0.0.0.0:<port>`).
+  * The Web Preview tab **automatically syncs and binds to this URL immediately**—eliminating the need to ever type or copy-paste localhost URLs manually.
+* **Localhost Access**: Jasper emits an ambient notification with the active URL (e.g. `http://localhost:3000`), allowing users to preview internally or open the app directly in an external Android browser (Chrome, Brave, Firefox) with a single tap.
+
+### 6.4. Real-Time Build Error Interception & "Fix" Workflow
+* **Continuous Error Interception**: Jasper continuously monitors dev server stderr streams, Vite/Next.js HMR error overlays, and browser console unhandled exceptions during preview testing.
+* **Dual Error Notification Surfaces**:
+  1. **Web Preview Floating Toast**: A discreet, dismissable floating card appears inside the preview: `⚠️ Build Error Detected: [TS2339 in Card.tsx] [ Fix ] [✕]`. Tapping `[ Fix ]` switches directly to Chat and triggers immediate self-healing.
+  2. **Pre-Input Sticky Chat Banner**: When in the Chat tab, a persistent notification banner docks **directly above the chat input field**: `[ 🚨 Build Error Detected in Preview: <brief error>  [ Fix ]  [✕] ]`.
+* **Auto-Healing Pre-Condition**:
+  * If the user sends a new feature request while build errors are active (e.g., *"Now add a search bar"*), Jasper automatically runs a **Two-Phase Turn**:
+    * **Phase 1 (Self-Healing)**: Analyzes the AST and patches the compilation/runtime error.
+    * **Phase 2 (Feature Execution)**: Implements the requested search bar on top of the clean, repaired codebase.
+
+### 6.5. Dual WakeLock & Android Sticky Persistent Notification Architecture
+To guarantee that background tasks continue running when the user switches to other apps or locks their screen:
+* **Agent WakeLock**:
+  * Held during active prompt processing, file scaffolding, and test execution.
+  * Promotes Jasper to an Android Foreground Service with a sticky notification displaying task name, step progress, and a `[ Pause Agent ]` action.
+  * Ensures tasks run to completion even if the user navigates away from the project, switches to another mobile app, or locks their device.
+  * Emits an audible/haptic completion alert when finished (`✅ Task Finished: ...`).
+* **Terminal WakeLock**:
+  * **Automatically activated as long as any terminal tab is open and running**, ensuring background dev servers, watchers, and CLI scripts never sleep or disconnect.
+  * Displays a persistent notification: `⚡ Jasper Terminal Active: <process_name> (<port>)`.
+  * **Clean Shutdown**: A terminal tab can be closed by typing the `exit` command or clicking the `[✕]` tab close icon. When all terminal tabs are closed and the agent is idle, the WakeLock and sticky notification are automatically released to preserve battery.
+
+### 6.6. Global Concurrency Lock & Cross-Project Roaming
+* **Complete Freedom to Roam**: When an agent task is executing in Project A, the developer is never locked to that screen. They can freely tap `[← Projects]`, inspect files in other repositories, browse settings, or converse in **Discuss Mode** in Global Chat or any other project.
+* **Single-Agent Build Concurrency Guard**:
+  * Because mobile hardware (e.g. 6GB RAM) cannot support multiple heavy multi-agent compiler/build processes simultaneously without triggering Android's Low Memory Killer (LMK), Jasper permits only **one active Build Mode task globally**.
+* **Informative Ambient Lock State (Zero Vague Errors)**:
+  * In other projects or Global Chat, the mode selector clearly indicates the active background process instead of ambiguously greying out or failing silently:
+    `[ 🔒 Agent Busy in "<ActiveProject>" ]`
+  * Tapping this button displays an informative action dialog:
+    *"Jasper is currently building in PulseFit. Wait for it to finish or tap below to check progress."*
+    `[ View Active Task ]` (1-tap teleport directly to the running task in Project A).
+* **Automatic Release**: As soon as the background task finishes, the concurrency lock is released across the entire app, allowing immediate Build Mode actions in any project.
+
+### 6.7. Dual-Swarm Architecture: Blue Team (Builders) & Red Team (Auditors)
+Jasper operates on a comprehensive **Build & Secure** philosophy, combining autonomous development with proactive security testing:
+* **Sequential Dual-Swarm Lifecycle**:
+  * **Blue Team (The Builders)**: Executes planning, code generation, file scaffolding, UI styling, and build verification.
+  * **Red Team (The Adversarial Auditors - Ported from Strix)**: Automatically deploys immediately after the Blue Team achieves a successful build, auditing the fresh codebase for vulnerabilities before marking the mission complete.
+* **10-Agent Concurrency Cap & Batching Rule**:
+  * Jasper enforces a hard ceiling of **at most 10 sub-agents running concurrently** to respect mobile CPU, RAM, and thermal boundaries.
+  * When a workflow requires more than 10 agents, tasks are automatically batched and scheduled sequentially.
+
+### 6.8. Jasper's 10-Agent Red Team Swarm (Ported from Strix)
+Derived from the 12 specialized disciplines in the Strix multi-agent penetration testing framework, Jasper condenses adversarial testing into a high-speed, parallel 10-Agent Red Swarm:
+1. **Lead Orchestrator & Attack Surface Grapher**: Maps AST routes, entrypoints, and API boundaries across the project.
+2. **Route & API Enumerator**: Discovers hidden endpoints, debug hooks (`/debug`, `/admin`, `/test`), and untyped query parameters.
+3. **Secret & Credential Leakage Auditor**: Scans source files, client bundles, git history, and configs for leaked API keys, tokens, and private secrets.
+4. **Configuration & Security Headers Auditor**: Inspects CORS policies, Content Security Policy (CSP), Cookie flags (`HttpOnly`, `SameSite`), and framework headers.
+5. **Injection Specialist**: Detects raw SQL/NoSQL queries, unescaped string concatenations, and unsafe OS command executions.
+6. **Broken Access Control & IDOR Specialist**: Audits route parameters, JWT claims, and session tokens to ensure horizontal and vertical authorization boundaries.
+7. **Authentication & Session Hardener**: Checks rate-limiting on sensitive routes, brute-force vulnerabilities, password hashing algorithms, and token expiration policies.
+8. **Client-Side & SSRF Specialist**: Scans for DOM-based XSS, unsanitized React `dangerouslySetInnerHTML`, and Server-Side Request Forgery vectors.
+9. **Supply Chain & Dependency CVE Auditor**: Correlates `package.json` lockfiles and dependencies against live security advisory vulnerability feeds.
+10. **Dynamic Validator & Defensive Patch Synthesizer**: Executes real simulated probes inside the PRoot sandbox to confirm exploitability with zero false positives, then immediately synthesizes and applies the defensive patch.
+
+### 6.9. Autonomous Self-Hardening & Pre-Push Checkpoint
+* **Zero-Intervention Security**:
+  * The Red Team operates autonomously. If a vulnerability is confirmed, the Red Team synthesizes the defensive patch, applies the unified diff, and re-compiles the code.
+  * No manual triage checklists or blocking modals required.
+* **Pre-Push Security Checkpoint (For Manual Coding)**:
+  * For manual editing in the Code Editor or Terminal, an automated git-push interceptor checks for hardcoded credentials and secret leakage, presenting a lightweight non-blocking warning: `[ ⚠️ Security Checkpoint: Secret detected in src/config.ts ] [ Push Anyway ] [ Move to .env (Fix) ]`.
+
+### 6.10. Code Philosophy & The 5-Rung Decision Ladder
+To eliminate AI code bloat, avoid over-engineering, and protect mobile system resources, Jasper incorporates a disciplined **Code Philosophy** engine that constrains the Blue Team (Architect and Coder agents):
+* **The 5-Rung Decision Ladder**:
+  Before generating any new code, the agent must evaluate the solution against five sequential questions:
+  1. **Does this even need to be built?** Avoid solving non-existent problems or adding unnecessary features.
+  2. **Does it already exist in the codebase?** Queries the project knowledge graph to reuse existing helpers, utilities, hooks, and schemas before creating duplicate logic.
+  3. **Does the native runtime/platform already do this?** Prefers standard Web and language APIs (`fetch()`, `crypto.randomUUID()`, `Intl.DateTimeFormat`, native array methods, CSS flex/grid) over external packages.
+  4. **Can an existing dependency solve it?** Maximizes the use of already-installed packages in `package.json` rather than installing new libraries for minor helpers.
+  5. **Write the absolute minimum viable code**: Enforces concise, readable, and focused code—zero premature abstraction factories, unnecessary generic wrappers, or ceremonial boilerplate.
+* **Three Architectural Intensity Levels** (Configured in Project Settings):
+  * **Lite**: Standard clean code standards with advisory warnings against redundant packages.
+  * **Full (Default)**: Strict enforcement of the 5-rung Decision Ladder, mandatory native platform API usage, and automated deduplication against the codebase graph.
+  * **Ultra**: Extreme minimalism. Enforces single-file co-location before creating directory abstractions, aggressively strips indirection, and requires explicit user consent before adding any new dependencies.
+
 ---
 
 ## 7. Filesystem Architecture & Agent Directory Isolation
