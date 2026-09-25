@@ -1,0 +1,6 @@
+{
+  "name": "Jasper",
+  "description": "Autonomous, privacy-first AI development workstation and Linux runtime for Android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
