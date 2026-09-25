@@ -56,6 +56,12 @@
     - 12.2. Graphify Knowledge Graph Deduplication Hook
     - 12.3. Platform Standard API Substitution Heuristics
     - 12.4. Intensity Profile State Machine (`Lite`, `Full`, `Ultra`)
+13. [Sub-Agents Engine (Agency Agents & Tri-Team Architecture)](#13-sub-agents-engine-agency-agents--tri-team-architecture)
+    - 13.1. Tri-Team Operational Model (Blue, Red, Green)
+    - 13.2. Storage, Immutability & User Custom Sub-Agents Hierarchy
+    - 13.3. Zero-RAM JIT Manifest Indexer & Lazy Loader
+    - 13.4. Claude Agent SDK Native Markdown Ingestion & Tool Binding
+    - 13.5. Cross-Team Collaboration & Dynamic Dispatch Algorithm
 
 ---
 
@@ -721,6 +727,167 @@ export const CODE_PHILOSOPHY_POLICIES: Record<CodePhilosophyMode, CodePhilosophy
   }
 };
 ```
+
+---
+
+## 13. Sub-Agents Engine (Agency Agents & Tri-Team Architecture)
+
+Jasper imports and utilizes the specialist agent catalog from `msitarzewski/agency-agents` as first-class operational personas. Because Jasper's agent foundation is built around Anthropic's **Claude Agent SDK**, Agency Agents require **zero conversion or adaptation**: their native Markdown system prompt format (`.md`) is ingested directly at runtime.
+
+### 13.1. Tri-Team Operational Model (Blue, Red, Green)
+To reflect Jasper's identity as both an autonomous coding environment and a general-purpose workstation, specialist sub-agents are partitioned into three dedicated teams with strictly scoped capabilities and tool bindings:
+
+```
+                              JASPER ORCHESTRATOR
+                                      │
+         ┌────────────────────────────┼────────────────────────────┐
+         ▼                            ▼                            ▼
+   🔵 BLUE TEAM                 🔴 RED TEAM                  🟢 GREEN TEAM
+   (Builders / Code)        (Auditors / Security)      (General / Operational)
+         │                            │                            │
+ • Engineering Division       • 10-Agent Swarm (Strix)     • Research & Academic
+ • UI/UX & Design Division    • AppSec Auditors            • Marketing & Growth
+ • Testing & Functional QA    • Threat Modelers            • Social Media & Content
+ • DevOps & Cloud Infra       • Secret / Config Auditors   • GIS & Spatial Computing
+ • System Architecture        • Automated AST Patchers     • Finance & Operations
+         │                            │                            │
+   Tools: Compilers, Git,       Tools: PRoot Loopback,       Tools: Headless Browser,
+   CodeMirror, PTY Terminals,   Dynamic Fuzzers, AST Patch   Web Search, Scraping,
+   AST Indexer, Linters         Engine, Sandbox Probes       Document Parsers, APIs
+```
+
+1. **🔵 Blue Team (Builders)**: Responsible for software engineering, architecture, frontend/backend implementations, database design, functional test suites, and styling. Operates under the 5-Rung Decision Ladder (Ponytail) to prevent AI boilerplate.
+2. **🔴 Red Team (Auditors)**: Dedicated security swarm (inspired by Strix). Operates in an adversarial capacity against the PRoot loopback interface, validating real vulnerabilities (zero false positives) and synthesizing defensive AST patches. **Red Team members never write user features.**
+3. **🟢 Green Team (General & Operational Specialists)**: Powers Jasper's General-Purpose Agent capabilities. Handles research, market analysis, GIS geographic computations, copy drafting, social media planning, documentation, and external workflows outside of code files.
+
+### 13.2. Storage, Immutability & User Custom Sub-Agents Hierarchy
+Jasper enforces a strict separation between core system agents and user-created sub-agents:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        SUB-AGENT STORAGE ARCHITECTURE                  │
+├────────────────────────────────────────────────────────────────────────┤
+│ 🔒 Tier 1: Read-Only Built-In Assets (`assets/agents/`)                 │
+│    • Ships with APK / Jasper bundle (Immutable & Non-Editable).        │
+│    • Contains full catalog (110+ Agency Agents + Blue/Red/Green core). │
+│    • Upgraded cleanly via app updates with zero merge conflicts.       │
+│    • Users CANNOT edit, delete, or accidentally corrupt these agents.  │
+├────────────────────────────────────────────────────────────────────────┤
+│ 👤 Tier 2: User Custom Agents (`~/.jasper/agents/`)                    │
+│    • Stored in user's PRoot Linux home directory (Read/Write).         │
+│    • Users can add custom `.md` personas, domain prompts, or tweaks.   │
+│    • Automatically included in encrypted `.jasp` portable backups.     │
+├────────────────────────────────────────────────────────────────────────┤
+│ 🔗 Tier 3: Claude Code Compatibility Bridge (`~/.claude/agents/`)      │
+│    • Symlink layer bridging both Tier 1 and Tier 2 directories.        │
+│    • Any CLI tool, plugin, or script expecting Claude Code agent       │
+│      markdowns finds them at standard paths automatically.             │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### 13.3. Zero-RAM JIT Manifest Indexer & Lazy Loader
+Loading 110+ agent markdown files into RAM simultaneously would violate Jasper's strict mobile hardware memory constraints. Instead, Jasper employs a Just-In-Time (JIT) scanning pipeline:
+
+```ts
+export type AgentTeam = 'blue' | 'red' | 'green';
+
+export interface SubAgentManifest {
+  id: string;               // e.g. 'database-optimizer'
+  name: string;             // e.g. 'Database Optimizer'
+  division: string;         // e.g. 'engineering'
+  team: AgentTeam;          // 'blue' | 'red' | 'green'
+  source: 'builtin' | 'user';
+  filePath: string;         // Absolute path to markdown file
+  triggers: string[];       // Keyword & intent activation triggers
+  requiredTools: string[];  // Tool access requirements
+}
+
+export class SubAgentRegistry {
+  private index: Map<string, SubAgentManifest> = new Map();
+
+  /**
+   * Scans assets/agents/ and ~/.jasper/agents/ at startup.
+   * Only reads YAML frontmatter / header comment (fast, <120KB RAM overhead).
+   */
+  async initialize(): Promise<void> {
+    await this.indexDirectory('assets/agents/', 'builtin');
+    await this.indexDirectory('~/.jasper/agents/', 'user');
+  }
+
+  /**
+   * Lazily loads the full Markdown prompt content ONLY when summoned.
+   */
+  async loadPrompt(agentId: string): Promise<string> {
+    const manifest = this.index.get(agentId);
+    if (!manifest) throw new Error(`Agent [${agentId}] not found in registry`);
+    return await readFile(manifest.filePath, 'utf-8');
+  }
+}
+```
+
+### 13.4. Claude Agent SDK Native Markdown Ingestion & Tool Binding
+When the Orchestrator dispatches a task to a specialist, Jasper loads the raw Markdown body and provides it directly to the Claude Agent SDK without intermediate transpilation:
+
+```ts
+export async function spawnSpecialistAgent(
+  manifest: SubAgentManifest,
+  taskContext: string,
+  userPrompt: string
+) {
+  const promptBody = await subAgentRegistry.loadPrompt(manifest.id);
+
+  // Tool binding enforced by Team policy
+  const toolSet = resolveToolSetForTeam(manifest.team);
+
+  // Inject Code Philosophy if Blue Team coder
+  const wrappedSystemPrompt = manifest.team === 'blue'
+    ? `${promptBody}\n\n${buildDecisionLadderDirective(activePhilosophy)}`
+    : promptBody;
+
+  return await claudeAgentSDK.spawn({
+    name: manifest.name,
+    systemPrompt: wrappedSystemPrompt,
+    tools: toolSet,
+    context: taskContext,
+  });
+}
+
+function resolveToolSetForTeam(team: AgentTeam) {
+  switch (team) {
+    case 'blue':
+      return [editorTools, terminalTools, gitTools, astGraphTools, linterTools];
+    case 'red':
+      return [loopbackProbeTools, astPatchTools, sandboxTestTools];
+    case 'green':
+      return [browserAutomationTools, webSearchTools, documentParserTools, apiTools];
+  }
+}
+```
+
+### 13.5. Cross-Team Collaboration & Dynamic Dispatch Algorithm
+When a complex user request arrives, the Orchestrator analyzes the intent and deploys multi-team specialist squads dynamically (respecting the global max-10 sub-agent concurrency cap):
+
+```
+Scenario: "Research real estate market in Lagos and build a map-based listing web app."
+
+  Step 1: Orchestrator Intent Classification
+          ├── Category A: Research & Data Gathering ➔ Dispatches GREEN TEAM
+          │   └── Specialists: [market-researcher, gis-spatial-analyst]
+          │       • Uses browser & APIs to scrape pricing and geojson coordinates.
+          │       • Emits structured artifacts to `workspace/.jasper/data/`.
+          │
+          ├── Category B: Software Engineering ➔ Dispatches BLUE TEAM
+          │   └── Specialists: [frontend-developer, backend-architect]
+          │       • Reads geojson artifacts, applies Ponytail Decision Ladder.
+          │       • Implements React Leaflet interface and backend API routes.
+          │
+          └── Category C: Security Verification ➔ Dispatches RED TEAM
+              └── Specialists: [appsec-auditor, secret-auditor]
+                  • Tests loopback endpoints against injection and secret leakage.
+                  • Synthesizes and applies self-hardening patches before completion.
+```
+
+Through this architecture, Jasper seamlessly leverages the rich Agency Agents ecosystem while maintaining immutable system protection, minimal memory usage, and clean team isolation.
 
 ---
 
