@@ -1,108 +1,136 @@
 # Jasper
 
-> **Autonomous, privacy-first AI development workstation and Linux runtime for Android.**
+> Your development workstation. Anywhere.
 
-Jasper transforms your smartphone into a sovereign, desktop-class development environment. Built directly on top of a native Android Linux userspace, Jasper combines a touch-ergonomic code editor, multi-session persistent terminals, an autonomous dual-swarm agent engine, and on-device AI inference—operating 100% offline with zero required accounts.
+Jasper is a privacy-first mobile development workstation built for developers who don't have a PC, need to work on the go, or simply want a complete development environment in their pocket.
 
----
+Built by [Spün](https://byspun.xyz).
 
-## 🧭 The Vision
+**The goal is simple: Give developers a serious development workstation without requiring a traditional PC.**
 
-```
-Mobile IDE  ──▶  Mobile Workstation  ──▶  Autonomous Dual-Swarm Studio  ──▶  Sovereign Pocket Lab
-```
-
-Jasper is not simply a code editor or a passive chatbot. It is an active software engineer and execution runtime in your pocket:
-* **The Phone as a Complete Workstation**: Full GNU C Library userspace running native toolchains (`node`, `python`, `git`, `wrangler`, `cargo`) locally without root via modern PRoot.
-* **Dual-Swarm Autonomous Engineering**: **Blue Team** builds, designs, and compiles features; **Red Team** validates surfaces adversarial-style, patches vulnerabilities, and hardens code automatically before task completion.
-* **Code Philosophy (Zero AI Bloat)**: Enforces the 5-rung Decision Ladder to eradicate boilerplate, favor native platform APIs, and prevent unnecessary dependency churn on mobile.
-* **Constitutional Policy Engine**: The agent proposes actions; the runtime enforces strict security boundaries, human confirmation gates, and AST validation.
-* **Air-Gapped & Sovereign**: Works completely offline using quantized local GGUF models (`llama.cpp`) or seamlessly switches to cloud providers (OpenRouter, Anthropic, OpenAI, custom endpoints).
-
----
-
-## 🏛️ Core Architecture
-
-```
-                    ┌─────────────────────────┐
-                    │          USER           │
-                    └────────────┬────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │     AI ORCHESTRATOR     │
-                    └────────────┬────────────┘
-                                 │
-        ┌────────────────────────┼────────────────────────┐
-        ▼                        ▼                        ▼
-  ┌────────────┐          ┌────────────┐           ┌────────────┐
-  │ BLUE TEAM  │          │  RED TEAM  │           │   MEMORY   │
-  │ (Builders) │          │ (Auditors) │           │(Persistent)│
-  └─────┬──────┘          └─────┬──────┘           └─────┬──────┘
-        │                        │                        │
-        └────────────────────────┼────────────────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │   POLICY & GUARDRAILS   │
-                    │  Read: Auto-allowed     │
-                    │  Write: Scoped          │
-                    │  Irreversible: Confirm  │
-                    └────────────┬────────────┘
-                                 │
-        ┌────────────────────────┼────────────────────────┐
-        ▼                        ▼                        ▼
- ┌──────────────┐        ┌──────────────┐         ┌──────────────┐
- │ NATIVE PROOT │        │     MCP      │         │   COMPOSIO   │
- │ LINUX RUNTIME│        │Native/Custom │         │     SDK      │
- └──────┬───────┘        └──────────────┘         └──────────────┘
-        │
-   ┌────┴────┬───────────┐
-   ▼         ▼           ▼
- Linux   Mobile IDE   In-App
- Shell   (Editor)    Browser
-   │         │           │
-   └─────────┼───────────┘
-             ▼
-      LOCAL PROJECTS
+```text
+                         JASPER
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+      Brain              Hands               Eyes
+        │                  │                  │
+    AI Models          Agent SDK        Vision Models
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                     Jasper Runtime
+                           │
+       ┌───────────────────┼───────────────────┐
+       │                   │                   │
+     Memory              Tools               Linux
+       │                   │                   │
+  Memory Graph       MCP / Skills /          PRoot
+                    Browser / Files
 ```
 
----
+These systems allow Jasper to reason, remember, see, interact with tools, and actually perform work on device.
 
-## 📚 Technical Documentation & Specifications
 
-Jasper's system architecture, technical design, and implementation specifications are organized into dedicated reference documents:
+## What Jasper Combines
 
-* 📋 **[`docs/features.md`](./docs/features.md)**: Complete user-facing features, dual-swarm workflow, filesystem boundaries, WakeLock persistence, and project lifecycle.
-* 🎨 **[`docs/ui_specs.md`](./docs/ui_specs.md)**: Visual specifications, mobile ergonomics, touch targets, keyboard accessory bar, mission cards, and drawer components.
-* ⚙️ **[`docs/logic.md`](./docs/logic.md)**: Complete system logic, PRoot lifecycle, AST route discovery, 10-agent Red Swarm state machines, Decision Ladder engine, and concurrency coordination.
-* 🤝 **[`CREDITS.md`](./CREDITS.md)**: Full acknowledgements and links to the upstream open-source projects, tools, and research architectures that inspired Jasper.
-
----
-
-## ⚡ Highlights at a Glance
-
-| Pillar | Capability |
+| Core Pillar | What It Powers |
 | :--- | :--- |
-| **Linux Subsystem** | ARM64 rootless PRoot v5.4+ with seccomp acceleration and Ubuntu 24.04 LTS userspace. |
-| **Autonomous Swarms** | Max-10 concurrent sub-agent execution engine with automatic batch scheduling. |
-| **Code Philosophy** | Strict 5-rung Decision Ladder (`Lite`, `Full`, `Ultra`) eliminating AI boilerplate and dependency bloat. |
-| **Adversarial Red Team** | Ported 10-agent security audit swarm with PRoot loopback validation and auto-patching. |
-| **Mobile Ergonomics** | CodeMirror 6 with custom virtual symbol keyboard bar, gesture zoom locks, and tabbed PTY terminals. |
-| **Universal Web Preview** | Dual-engine route discovery (static AST scraper + dynamic loopback sniffer) with auto-starting dev daemons. |
-| **Local Inference** | On-device `llama.cpp` ARM NEON runner with PocketPal-inspired RAM safety tiers for 6GB mobile hardware. |
+| **Linux Subsystem** | Real ARM64 Linux userspace via PRoot (Node.js, Python, Git, Rust, standard package managers) |
+| **Mobile IDE & Terminal** | CodeMirror touch editor with accessory symbol bar, xterm.js persistent PTY terminals |
+| **Workspaces & Previews** | Isolated project storage, automated port detection, live in-app web previews |
+| **Dual AI Agents** | Autonomous Coding Agent (Claude Agent SDK-powered) + General-Purpose Agent (browser & research) |
+| **Model Federation** | Multi-provider routing, protocol translation, combo fallback pipelines, and local GGUF models |
+| **Persistent Memory** | Connected knowledge graph mapping preferences, architectures, skills, tools, and project history |
+| **Self-Hardening Security** | Multi-agent adversarial auditing, sandbox validation, automated patching, and regression verification |
 
----
 
-## 🛠️ Technology Stack
+## Jasper Isn't Just an AI Chatbot
 
-* **Mobile Container**: Capacitor (Android native bridge, WakeLocks, scoped storage)
-* **Frontend UI**: React 19, TypeScript, Tailwind CSS, Motion
-* **Editor & Terminal**: CodeMirror 6, xterm.js with loopback WebSocket PTY multiplexing
-* **Linux Userspace**: PRoot ARM64, Ubuntu 24.04 Rootfs (`glibc 2.38+`)
-* **Local Inference**: `llama.cpp` ARM64 NEON, Qwen2.5-Coder GGUF models
-* **Tooling Protocol**: Model Context Protocol (MCP), Composio SDK
+Jasper can talk to you, but conversation isn't the point. Jasper can actually work.
 
----
+### Autonomous Coding Agent
+Built around Anthropic's Claude Agent SDK—remaining fully compatible with Claude Code skills, plugins, and workflows:
+* Understands existing codebases and project structures
+* Creates and edits files, refactors code, and manages dependencies
+* Executes commands, runs test suites, and debugs failures
+* Starts development daemons, inspects web previews, and self-heals errors
 
-*For detailed architectural mechanics, refer to the [`docs/`](./docs/) directory.*
+### General-Purpose Agent
+Coding is one of Jasper's abilities, not its entire identity. The general-purpose agent leverages browser automation and external tools to:
+* Research documentation, libraries, and real-time information
+* Navigate dynamic web applications and complete multi-step online workflows
+* Perform research and operational tasks outside the terminal and code editor
+
+
+## A Real Development Environment in Your Pocket
+
+Jasper runs a true Linux userspace directly on Android without requiring a remote development server or root access:
+* **Toolchains**: Node.js, Python, Rust, Git, and package managers running natively in PRoot
+* **Persistent Terminals**: Multi-session PTY shells with xterm.js and background WakeLock support
+* **On-Device Storage**: Projects live directly on your phone's storage and can be worked on completely offline
+
+
+## Your AI, Your Models
+
+Jasper isn't tied to a single AI provider. Its native model federation layer provides:
+* **Provider Adapters & Protocol Translation**: Seamless switching between cloud endpoints and local engines
+* **Intelligent Routing & Fallbacks**: Model combinations, rate-limit failovers, load balancing, and vision handoffs
+* **Local On-Device Models**: High-performance local inference via quantized GGUF models on mobile ARM64 hardware
+
+
+## Built for Privacy & User Ownership
+
+* **No Mandatory Account**: Use Jasper without forced logins or platform lock-in
+* **Zero Telemetry by Default**: Your source code, terminal sessions, and queries stay on your hardware
+* **Local Backups**: Encrypted `.jasp` portable archives for full backup and restore
+* **Offline-Capable**: Full development loop works without an active internet connection
+
+
+## Security & Self-Hardening
+
+Jasper doesn't just build software—it actively secures what it builds:
+1. **Analyze**: Examines routes, entry points, dependencies, and AST boundaries
+2. **Find**: Detects injection, broken access control (IDOR), secret leaks, and misconfigurations
+3. **Validate**: Verifies vulnerabilities inside the local PRoot sandbox with zero false positives
+4. **Patch & Re-Test**: Synthesizes defensive code patches, applies unified diffs, and re-compiles
+
+
+## Connected Memory Graph
+
+Instead of treating every conversation as an isolated session, Jasper builds a connected knowledge graph that maintains long-term context:
+* User preferences & coding style
+* Project architecture & design decisions
+* Recurring development patterns & conventions
+* Tools, skills, active dependencies, and verified historical checkpoints
+
+
+## Built for Mobile Ergonomics
+
+Jasper isn't a desktop IDE awkwardly shrunk down to a smartphone screen:
+* Touch-first controls and gesture-driven drawer navigation
+* Dedicated virtual accessory keyboard bar for code symbols
+* Non-blocking background builds with Android persistent foreground notifications
+* Hardware-aware resource protection against Low Memory Killer (LMK) events
+
+
+## Documentation
+
+Jasper's architecture and specifications are documented across focused reference guides:
+
+* 📋 **[`docs/features.md`](./docs/features.md)** — Detailed capabilities, agent tools, WakeLock architecture, and project lifecycle
+* ⚙️ **[`docs/logic.md`](./docs/logic.md)** — Core engineering logic, PRoot internals, AST route discovery, and agent state machines
+* 🎨 **[`docs/ui_specs.md`](./docs/ui_specs.md)** — Mobile UI design system, touch ergonomics, screen wireframes, and keyboard specs
+* 🤝 **[`CREDITS.md`](./CREDITS.md)** — Open-source projects, research, and upstream tools that helped shape Jasper
+
+
+## Project Status
+
+**🚧 Early Development**
+
+Jasper is currently in the research, architecture, and UI/UX specification phase before implementation begins.
+
+
+Jasper is a project by [Spün](https://byspun.xyz).
+
+> Less complexity. More seamless technology.
