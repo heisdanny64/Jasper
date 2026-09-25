@@ -8,6 +8,9 @@ Built by [Spün](https://byspun.xyz).
 
 **The goal is simple: Give developers a serious development workstation without requiring a traditional PC.**
 
+
+## The Architecture 
+
 ```text
                          JASPER
                            │
