@@ -3,10 +3,15 @@
 > **Document Type:** Technical & Engineering Implementation Guide  
 > **Target Runtime:** Android (Capacitor Container + React 19 + TypeScript + Native Linux PRoot)  
 > **Referenced Repositories & Engines:**
+> - **Graphify:** [`https://github.com/Graphify-Labs/graphify`](https://github.com/Graphify-Labs/graphify) (Knowledge Graph & Persistent Memory Representation)
+> - **Strix:** [`https://github.com/usestrix/strix`](https://github.com/usestrix/strix) (10-Agent Red Team Swarm & Autonomous Vulnerability Remediation)
 > - **9Router:** [`https://github.com/decolua/9router`](https://github.com/decolua/9router) (Provider federation, translation, combos, token compression)
-> - **Graphify:** Knowledge Graph & AST Memory Representation
+> - **Agency Agents:** [`https://github.com/msitarzewski/agency-agents`](https://github.com/msitarzewski/agency-agents) (Specialist Agent System)
+> - **Mobile Harness:** [`https://github.com/techjarves/Mobile-Harness`](https://github.com/techjarves/Mobile-Harness) (Mobile Linux & Terminal Development Environment)
+> - **Claude Agent SDK:** [`https://code.claude.com/docs/en/agent-sdk/overview`](https://code.claude.com/docs/en/agent-sdk/overview) (Autonomous Coding Agent & Ecosystem Compatibility)
+> - **Manus:** [`https://manus.im/docs/introduction/welcome`](https://manus.im/docs/introduction/welcome) (General-Purpose Agent & Browser Capabilities)
+> - **Ponytail:** [`https://github.com/DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (Code Philosophy & The 5-Rung Decision Ladder)
 > - **llama.cpp:** Native ARM64 Local LLM Inference Daemon
-> - **Claude Agent SDK:** Autonomous Tool-Use & Agentic Loop Architecture
 > **Date:** September 2026
 
 ---

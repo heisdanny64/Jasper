@@ -4,66 +4,83 @@ Jasper stands on the shoulders of remarkable open-source projects, research init
 
 ---
 
-## 🏛️ Direct Inspirations & Ported Architectures
+## 🏛️ Projects & Inspirations
 
-### 1. [Strix](https://github.com/usestrix/strix)
-* **Website / Repo**: [https://github.com/usestrix/strix](https://github.com/usestrix/strix)
-* **What It Is**: An open-source autonomous AI penetration testing tool and multi-agent cybersecurity framework designed to identify, validate, and remediate vulnerabilities in codebases.
-* **What It Inspired in Jasper**:
-  * **Jasper's 10-Agent Red Team Swarm**: The architecture of deploying an adversarial swarm of specialized sub-agents (Lead Orchestrator, Route Enumerator, Secret Auditor, Config Auditor, Injection Specialist, IDOR Specialist, Auth Hardener, Client/SSRF Specialist, Supply Chain Auditor, and Dynamic Patch Synthesizer).
-  * **Dynamic Sandbox Behavioral Validation**: Testing endpoints against local runtime daemons inside PRoot to eliminate false positives.
-  * **Automated Self-Hardening**: Rather than merely reporting warnings, the auditor automatically writes defensive AST patches, applies unified diffs, and verifies compilation.
+### Graphify
+https://github.com/Graphify-Labs/graphify
 
-### 2. [Ponytail](https://github.com/DietrichGebert/ponytail)
-* **Website / Repo**: [https://github.com/DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)
-* **What It Is**: An AI coding ruleset and skill designed to make AI agents "think like the laziest senior developer in the room" by avoiding unnecessary complexity, bloat, and boilerplate.
-* **What It Inspired in Jasper**:
-  * **Code Philosophy System**: Jasper's configurable discipline profiles (`Lite`, `Full`, `Ultra`).
-  * **The 5-Rung Decision Ladder**: Forcing the Architect and Coder agents to verify whether code needs to be built at all, if it already exists in the project graph, if native runtime APIs can solve it, and strictly minimizing new dependencies before writing code.
-  * **Anti-Overengineering & Mobile Efficiency**: Eliminating npm dependency bloat to drastically speed up PRoot build times and preserve mobile RAM and battery.
+**Inspired:** Jasper's memory system.
 
-### 3. [Graphify](https://github.com/Graphify-AI/graphify)
-* **Website / Repo**: [https://github.com/Graphify-AI/graphify](https://github.com/Graphify-AI/graphify)
-* **What It Is**: An AST-based code graph and dependency visualizer that indexes complex codebases into structured semantic graphs.
-* **What It Inspired in Jasper**:
-  * **Project Knowledge Graph (AST Index)**: Powers Jasper's cross-file context retrieval, symbol references, and component dependency maps.
-  * **Duplication Guard**: Enables Ponytail's decision ladder to query existing utility functions, hooks, and schemas across the codebase before generating duplicate code.
-  * **Surface Mapping for Red Team**: Enables the security orchestrator to parse the full route tree and input boundaries instantly.
+Graphify inspired the idea of making Jasper's persistent memory one large graph, allowing relationships between users, projects, preferences, decisions, skills, tools, and other information to be represented and queried as connected data.
 
-### 4. [Agency Agents](https://github.com/agencyenterprise/agency-agents)
-* **Website / Repo**: [https://github.com/agencyenterprise/agency-agents](https://github.com/agencyenterprise/agency-agents)
-* **What It Is**: A curated repository of specialized AI agent roles, prompt architectures, and division-of-labor specifications.
-* **What It Inspired in Jasper**:
-  * **The ~300 Specialized Sub-Agent Roster**: The taxonomic design and role boundaries for Jasper's sub-agents across Frontend, Backend, Database, Testing, DevOps, and Architecture.
-  * **Role Encapsulation**: Ensuring agents maintain strict, single-responsibility contracts during execution phases.
+---
 
-### 5. [Claude's Agent SDK (Anthropic)](https://github.com/anthropics/anthropic-sdk-typescript)
-* **Website / Repo**: [https://github.com/anthropics/anthropic-sdk-typescript](https://github.com/anthropics/anthropic-sdk-typescript) • [Anthropic Documentation](https://docs.anthropic.com/)
-* **What It Is**: The official SDK and agentic design patterns for building tool-using, recursive problem-solving workflows with Claude.
-* **What It Inspired in Jasper**:
-  * **Mission Card Step Checklist & Tool-Calling Protocol**: The structured loop of tool call proposal, argument validation, execution, and observation feedback.
-  * **Context Compaction & Memory Strategy**: Patterns for managing long-horizon reasoning within strict token budgets.
+### Strix
+https://github.com/usestrix/strix
 
-### 6. [Manus](https://github.com/manus-ai)
-* **Website / Repo**: [https://manus.im](https://manus.im)
-* **What It Is**: An autonomous general-purpose AI agent capable of multi-step execution, dynamic environment setup, and end-to-end task completion.
-* **What It Inspired in Jasper**:
-  * **Autonomous Task Completion Loop**: The principle of running multi-turn loops from prompt to verified end state without forcing the human to babysit every file write or command execution.
-  * **Ambient Execution Timeline**: Clean, non-intrusive UI representations of agent thinking, tool usage, and milestones.
+**Inspired:** Jasper's security capabilities.
 
-### 7. [9router](https://github.com/9router)
-* **Website / Repo**: [https://github.com/9router](https://github.com/9router)
-* **What It Is**: An intelligent multi-provider LLM reverse proxy and routing engine.
-* **What It Inspired in Jasper**:
-  * **Multi-Provider AI Gateway & Fallbacks**: Seamless routing between local on-device inference (`llama.cpp`), OpenRouter, Anthropic, OpenAI, and custom endpoints.
-  * **Automatic Failover**: Transparently retrying or rerouting requests on rate limits or service degradation.
+Strix inspired Jasper's ability to actively test applications it has built, find vulnerabilities and loopholes, create patches, apply them, and test again to verify the fixes.
 
-### 8. [Mobile Harness / PocketPal AI](https://github.com/a-ghorbani/pocketpal-ai)
-* **Website / Repo**: [https://github.com/a-ghorbani/pocketpal-ai](https://github.com/a-ghorbani/pocketpal-ai)
-* **What It Is**: An open-source mobile application for running local LLMs on Android and iOS using `llama.cpp`.
-* **What It Inspired in Jasper**:
-  * **Hardware Safety Analyzer & Memory Tiering**: RAM safety thresholds, LMK (Low Memory Killer) protection algorithms, and GGUF quantization selection based on mobile device specs.
-  * **ARM64 Native Inference Optimization**: Dynamic thread allocation based on device thermal status.
+---
+
+### 9Router
+https://github.com/decolua/9router
+
+**Inspired:** Jasper's native model federation and routing architecture.
+
+Jasper is adapting useful parts of 9Router's architecture rather than using 9Router as an AI provider. This includes provider adapters, protocol translation, model combinations, fallback handling, request routing, and support for different AI providers through a unified system.
+
+---
+
+### Agency Agents
+https://github.com/msitarzewski/agency-agents
+
+**Inspired:** Jasper's specialist agent system.
+
+Agency Agents inspired Jasper's use of focused specialist agents for different areas of work, such as architecture, frontend, backend, databases, security, QA, DevOps, and UI/UX.
+
+Jasper determines which specialists are actually needed for a task instead of deploying every available agent.
+
+---
+
+### Mobile Harness
+https://github.com/techjarves/Mobile-Harness
+
+**Inspired:** Jasper's mobile development environment.
+
+Mobile Harness helped inspire the idea of bringing a serious Linux development environment, terminal, AI coding capabilities, and flexible AI provider support to Android devices.
+
+---
+
+### Claude Agent SDK
+https://code.claude.com/docs/en/agent-sdk/overview
+
+**Inspired:** Jasper's coding agent.
+
+The Claude Agent SDK is the SDK behind Claude Code and provides the foundation for Jasper's coding agent.
+
+It also enables Jasper to remain compatible with the wider Claude Code ecosystem, allowing Jasper to work with things such as Claude Code skills, plugins, tools, and related workflows.
+
+---
+
+### Manus
+https://manus.im/docs/introduction/welcome
+
+**Inspired:** Jasper's general-purpose agent and browser capabilities.
+
+Manus inspired the idea of making Jasper capable of much more than coding.
+
+Jasper's general-purpose agent can use tools such as a browser to perform research, interact with websites, complete workflows, and handle tasks outside traditional software development.
+
+---
+
+### Ponytail
+https://github.com/DietrichGebert/ponytail
+
+**Inspired:** Jasper's Code Philosophy and Decision Ladder.
+
+Ponytail inspired Jasper's Code Philosophy engine, making the coding agents write cleaner, minimal, and non-overengineered code through a strict decision ladder that prioritizes native platform APIs, reuses existing code, and minimizes third-party dependency churn.
 
 ---
 
