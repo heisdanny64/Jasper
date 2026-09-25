@@ -693,7 +693,7 @@ Jasper provides a single-file, military-grade encrypted backup system for total 
 | :--- | :--- | :--- | :--- |
 | **Frontend Framework** | UI Library | React 19 + TypeScript | High developer velocity, vast ecosystem, type safety |
 | **Styling & Motion** | CSS Engine | Tailwind CSS v4 + Motion | Instant responsive adaptation, zero CSS bloat, fluid animations |
-| **Icons** | Iconography | Lucide React | Clean, modern, lightweight SVG icons |
+| **Icons** | Iconography | Huge Icons | Clean, modern, lightweight SVG icons |
 | **Native Mobile Shell**| Android Container | Capacitor | Web-stack native compilation; zero Kotlin/Swift required |
 | **Code Editor** | Text Component | CodeMirror 6 | First-class mobile touch handling and extensions |
 | **Terminal** | PTY Display | xterm.js + WebSockets | High-performance ANSI rendering and PTY bridging |
