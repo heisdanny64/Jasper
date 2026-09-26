@@ -557,10 +557,19 @@ Jasper's capabilities extend infinitely through open tool protocols and modular 
   * `sqlite-mcp` / `postgres-mcp`: Database inspection and schema querying.
   * Custom user-defined MCP servers configured via JSON.
 
-### 12.2. Composio SDK Integration
-* In-app OAuth discovery and integration with 100+ production tools without leaving Jasper:
-  * GitHub, Vercel, Supabase, Cloudflare, Linear, Slack, Discord, Google Workspace, AWS.
-* Authenticates directly within Jasper's UI; tokens stored securely in encrypted local app storage.
+### 12.2. Composio SDK Integration & Just-in-Time Tool Authorization
+Composio powers Jasper's access to external web services, APIs, and developer platforms (100+ integrations including GitHub, Linear, Slack, Discord, Supabase, Vercel, Google Workspace, Jira, and AWS) through on-demand MCP discovery and seamless OAuth Connect Links.
+
+* **On-Demand Tool Discovery**:
+  * When an agent needs an external tool to complete a task (e.g. *"Create a Linear ticket for this bug"* or *"Push this commit to a GitHub repo"*), Jasper automatically queries the Composio catalog to verify if the requested toolkit is supported.
+* **Autonomous Connect Link Generation**:
+  * If the toolkit is supported but lacks active authentication, Jasper calls Composio to generate a secure, hosted **Connect Link** (`composio.connected_accounts.link()` / `session.authorize()`).
+  * Jasper pauses execution and displays an inline, non-intrusive **Connect / Authorize Tool** button in the chat interface.
+  * Tapping the button opens the secure OAuth authorization flow in an Android Chrome Custom Tab or browser sheet.
+  * Once authenticated, Composio securely manages tokens and server-side refresh lifecycles, and Jasper automatically resumes its task without requiring manual token entry.
+* **Unified MCP Management in "Skills & MCP"**:
+  * All connected accounts created via Composio are automatically surfaced inside Jasper's **Skills & MCP** drawer (accessible from the hamburger menu).
+  * Users can view both custom user-added MCP servers and Composio-connected tools side-by-side, toggle individual tools on or off, test connectivity, view permissions, or disconnect/revoke access at any time.
 
 ### 12.3. Extensible Skills System
 * **Agents** define *who* executes the task.

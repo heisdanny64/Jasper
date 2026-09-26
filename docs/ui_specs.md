@@ -23,6 +23,8 @@
 11. [Application Settings & Default Launch Screen](#11-application-settings--default-launch-screen)
 12. [AI Providers & Local Model Setup (PocketPal Flow)](#12-ai-providers--local-model-setup-pocketpal-flow)
 13. [AI Providers & 9Router Management UI](#13-ai-providers--9router-management-ui)
+14. [Project Settings: Code Philosophy Configuration](#14-project-settings-code-philosophy-configuration)
+15. [Skills & MCP Management UI (Composio & Custom Servers)](#15-skills--mcp-management-ui-composio--custom-servers)
 
 ---
 
@@ -953,6 +955,201 @@ Located in `[⚙️ Project Settings] ➔ Agent & Compilation ➔ Code Philosoph
 
 * **Interactive Radio Group**: Standard Android touch target (min 48px height per option) with immediate state persistence to `.jasper/project-config.json`.
 * **Zero UI Noise Policy**: The Code Philosophy rules execute silently inside the agent runtime. The Chat Mission Card does not display noisy metrics or bragging text, keeping the interface completely focused on the developer's goals.
+
+---
+
+## 15. Skills & MCP Management Page (`/skills-mcp`)
+
+Accessed via the Hamburger Menu (`≡`) ➔ **`🧩 Skills & MCP`** (navigates to a dedicated full-screen page, not a drawer).
+
+This page provides a clean, touch-ergonomic command center for managing all skills and Model Context Protocol (MCP) integrations.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [← Back]                 Skills & MCP                [+ Add]│
+├─────────────────────────────────────────────────────────────┤
+│  [ Skills (12) ]                    [ MCP Tools (4) ]       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🐙 GitHub                                         (●)   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🎯 Linear                                         (●)   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ▲ Vercel                                          (○)   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 🌐 Puppeteer Web Operator                         (●)   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 15.1. Page Header & Minimalist Card Anatomy
+* **Header Architecture**:
+  * Top Left: `[← Back]` button returns to previous screen (Chat or Projects Hub).
+  * Center: Clean title `Skills & MCP`.
+  * Top Right: `[+ Add]` action button triggers the Add Integration modal flow.
+* **Minimalist Rectangular Cards**:
+  * **Visual Cleanliness**: Displays strictly the verified **Icon** and **Tool Name** on the left, and the **Toggle Switch `(●) / (○)`** on the right. No provenance labels, no redundant badges, no clutter.
+  * **Master Toggle**: Tapping the toggle switch enables or disables the tool inside the active agent runtime immediately without revoking authentication or deleting credentials.
+  * **Card Click Behavior**: Directly clicking anywhere on the card body (outside the toggle) opens the **Tool Capabilities & Inspection Sheet**.
+
+---
+
+### 15.2. Tool Capabilities & Inspection Sheet (On Card Click)
+
+Tapping an MCP card slides up a bottom sheet revealing its exposed tools and removal action:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🐙 GitHub                                             [✕]   │
+├─────────────────────────────────────────────────────────────┤
+│ EXPOSED CAPABILITIES & TOOLS                                │
+│                                                             │
+│ • search_repositories(query, sort)                          │
+│ • create_pull_request(title, head, base, body)              │
+│ • list_issues(repo, state)                                  │
+│ • create_issue(title, body, labels)                         │
+│ • get_file_contents(repo, path, ref)                        │
+│ • push_commit(branch, message, files)                       │
+│                                                             │
+│ ─────────────────────────────────────────────────────────── │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │                  🗑️ Delete Connection                   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Exposed Functions List**: Human-scannable inventory of callable tools (`search()`, `create_issue()`, etc.) currently accessible to Jasper's Blue and Green teams.
+* **Delete Button (`🗑️ Delete Connection`)**: Placed at the bottom in destructive styling. Tapping it opens a confirmation dialog:
+  * *"Are you sure you want to delete this connection? Jasper will no longer have access to this tool."*
+  * If confirmed, immediately revokes remote OAuth tokens (if Composio) or terminates stdio processes, deletes the local record, and dismisses the sheet.
+
+---
+
+### 15.3. The Add Integration Modal Flow (`[+ Add]`)
+
+Tapping `[+ Add]` in the top header launches a two-step guided setup modal.
+
+#### Step 1: Type Selection
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Add Integration                                       [✕]   │
+├─────────────────────────────────────────────────────────────┤
+│ What would you like to add?                                 │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (●) 🔌 MCP Tool                                         │ │
+│ │     Connect an external tool or service API via MCP     │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ (○) 🧩 Skill                                            │ │
+│ │     Add new capabilities via instructions (skill.md)    │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │                        [ Next ➔ ]                       │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Step 2 (Option A): Adding an MCP Tool
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Connect MCP Tool                                      [✕]   │
+├─────────────────────────────────────────────────────────────┤
+│ Tool Name                                                   │
+│ [ Supabase Inspector                                      ] │
+│                                                             │
+│ Server URL / Endpoint                                       │
+│ [ https://mcp.supabase.com/sse                            ] │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Requires Authentication                             (●) │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [ 🔐 Authenticate Tool ]                                │ │
+│ │ (Opens OAuth sheet / Bearer token prompt)               │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │                        [ Save ]                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Requires Authentication Toggle**:
+  * Off: Direct open connection (public or local stdio).
+  * On: Prompts inline authentication via `[ 🔐 Authenticate Tool ]` (OAuth or token entry).
+* **Validation & Icon Resolution on Save**:
+  * Tapping `[ Save ]` initiates an instant handshake check against the endpoint (`tools/list`).
+  * Jasper verifies protocol compliance. If invalid, displays an inline error banner.
+  * Automatically fetches and parses the server's favicon/logo to populate the card's verified icon.
+  * Mounts the verified MCP tool immediately into the active list.
+
+#### Step 2 (Option B): Adding a Skill
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Add New Skill                                         [✕]   │
+├─────────────────────────────────────────────────────────────┤
+│ Skill Name                                                  │
+│ [ Next.js Migration Specialist                            ] │
+│                                                             │
+│ Choose Installation Method:                                 │
+│ [ 📁 Upload skill.md ]           [ 💻 Run Skill Command ]   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ ── If "Upload skill.md" selected: ──                        │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 📄 Choose File from Device                              │ │
+│ │ [ Browse Storage... ]                                   │ │
+│ │ (Selected: nextjs-migration.md)                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ── If "Run Skill Command" selected: ──                      │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Installation Command                                    │ │
+│ │ [ npx skills add vercel/nextjs-skill                    ] │ │
+│ │                                                         │ │
+│ │ [ ⚡ Install ]                                          │ │
+│ │ (Executes inside PRoot shell with inline terminal logs) │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │                        [ Save ]                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **Option 1: Upload `skill.md`**: User browses local Android storage, selects a `.md` file, inputs a skill name, and clicks `Save`. Stored in `~/.jasper/skills/<name>/SKILL.md`.
+* **Option 2: Run Skill Command**: User pastes a CLI install command (e.g. `npx skills add ...`), clicks `[ ⚡ Install ]` which executes in PRoot with inline progress logs, then clicks `Save` to mount it.
+
+---
+
+### 15.4. In-Chat Just-in-Time Connect Prompt
+When an agent encounters a goal requiring an unauthenticated Composio tool (e.g., user asks *"Create a Linear ticket for this"*), the agent suspends execution and injects an interactive authorization card directly into the chat:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🎯 Linear Integration Required                              │
+│ Jasper needs permission to create issues in your Linear     │
+│ workspace to complete this task.                            │
+│                                                             │
+│ [ 🔗 Connect Linear ]                           [ Cancel ]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+* **One-Tap Authorization**: Tapping `[ 🔗 Connect Linear ]` launches the secure Composio-hosted Connect Link in an Android Chrome Custom Tab.
+* **Auto-Resume**: Upon completing OAuth, the Custom Tab closes automatically, the tool card in the chat updates to `🟢 Connected`, and Jasper immediately resumes and completes the action.
 
 ---
 

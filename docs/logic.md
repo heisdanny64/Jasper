@@ -62,6 +62,16 @@
     - 13.3. Zero-RAM JIT Manifest Indexer & Lazy Loader
     - 13.4. Claude Agent SDK Native Markdown Ingestion & Tool Binding
     - 13.5. Cross-Team Collaboration & Dynamic Dispatch Algorithm
+14. [Composio SDK & Dynamic MCP Discovery Engine](#14-composio-sdk--dynamic-mcp-discovery-engine)
+    - 14.1. On-Demand Tool Query & Verification Pipeline
+    - 14.2. Hosted Connect Link Generation & OAuth Suspension Flow
+    - 14.3. Unified MCP Bridge & Precedence Ladder (Local First, Composio Fallback)
+    - 14.4. State Management, Toggling & Credential Lifecycle
+15. [Custom MCP Server Validation & Skills Installation Engine](#15-custom-mcp-server-validation--skills-installation-engine)
+    - 15.1. MCP Server Protocol Handshake Verification (`tools/list`)
+    - 15.2. Automated Favicon & Brand Asset Resolution
+    - 15.3. Dual Skill Installation Pipelines (Storage Upload vs. PRoot CLI `skills add`)
+    - 15.4. Unified Git Credential Helper Hook (Seamless CLI & Blue Team Git Push)
 
 ---
 
@@ -888,6 +898,305 @@ Scenario: "Research real estate market in Lagos and build a map-based listing we
 ```
 
 Through this architecture, Jasper seamlessly leverages the rich Agency Agents ecosystem while maintaining immutable system protection, minimal memory usage, and clean team isolation.
+
+---
+
+## 14. Composio SDK & Dynamic MCP Discovery Engine
+
+Jasper integrates the **Composio SDK** (`composio-core` / `@composio/core`) to allow both Developer (Blue Team) and General Operator (Green Team) agents to access over 100+ external developer and enterprise platforms (e.g., GitHub, Linear, Slack, Discord, Supabase, Vercel, Google Workspace, Jira, AWS) dynamically.
+
+Rather than requiring users to manually configure API keys, Jasper uses an **on-demand discovery and authorization loop**:
+
+```
+                       AGENT EXECUTION LOOP
+                                │
+               (Agent identifies need for external tool)
+               e.g. "Create a Linear issue for this bug"
+                                │
+                                ▼
+         ┌──────────────────────────────────────────────┐
+         │ 1. Tool Resolution & Catalog Query           │
+         │    Check Composio Catalog for requested app   │
+         └──────────────────────┬───────────────────────┘
+                                │
+                 ┌──────────────┴──────────────┐
+                 ▼                             ▼
+       [Tool NOT Supported]          [Tool Supported]
+                 │                             │
+       Fallback to Browser /                   ▼
+       Web Search / Direct API       ┌───────────────────────────────────┐
+                                     │ 2. Check Active Connection        │
+                                     │    composio.connectedAccounts     │
+                                     └─────────────────┬─────────────────┘
+                                                       │
+                                      ┌────────────────┴────────────────┐
+                                      ▼                                 ▼
+                             [Already Connected]              [Authentication Needed]
+                                      │                                 │
+                                      ▼                                 ▼
+                             Inject MCP Tool Schema            ┌───────────────────────────────────┐
+                             and Execute Action                │ 3. Generate Hosted Connect Link   │
+                                                               │    session.authorize(toolkit)     │
+                                                               └────────────────┬──────────────────┘
+                                                                                │
+                                                                                ▼
+                                                               ┌───────────────────────────────────┐
+                                                               │ 4. Suspend Agent & Show UI Button │
+                                                               │    [ 🔗 Connect Linear ]          │
+                                                               └────────────────┬──────────────────┘
+                                                                                │
+                                                                                ▼
+                                                                  User Authenticates in Chrome Tab
+                                                                                │
+                                                                                ▼
+                                                               ┌───────────────────────────────────┐
+                                                               │ 5. Webhook/Polling Resume         │
+                                                               │    Auto-mount tool into MCP bridge │
+                                                               └───────────────────────────────────┘
+```
+
+### 14.1. On-Demand Tool Query & Verification Pipeline
+When an agent encounters a goal requiring an external service, it invokes the internal `composio_resolve_tool` runtime procedure:
+
+```ts
+export interface ToolResolutionResult {
+  supported: boolean;
+  app: string;
+  authenticated: boolean;
+  connectionId?: string;
+  connectUrl?: string;
+  tools: any[];
+}
+
+export async function resolveExternalTool(appQuery: string, entityId: string = 'default'): Promise<ToolResolutionResult> {
+  const composio = getComposioClient();
+
+  // 1. Search Composio supported app registry
+  const apps = await composio.apps.get({ name: appQuery.toLowerCase() });
+  if (!apps || apps.length === 0) {
+    return { supported: false, app: appQuery, authenticated: false, tools: [] };
+  }
+
+  const targetApp = apps[0].name;
+
+  // 2. Check if the current user/entity already has an active connected account
+  const connectedAccounts = await composio.connectedAccounts.list({
+    userUuid: entityId,
+    appName: targetApp,
+    status: 'ACTIVE'
+  });
+
+  if (connectedAccounts && connectedAccounts.length > 0) {
+    // Already authenticated; fetch the MCP-compatible tool definitions
+    const tools = await composio.actions.get({ appNames: [targetApp] });
+    return {
+      supported: true,
+      app: targetApp,
+      authenticated: true,
+      connectionId: connectedAccounts[0].id,
+      tools
+    };
+  }
+
+  // 3. Not authenticated: Generate secure hosted Connect Link
+  const authSession = await composio.connectedAccounts.link({
+    userUuid: entityId,
+    appName: targetApp,
+    redirectUrl: 'jasper://oauth-callback'
+  });
+
+  return {
+    supported: true,
+    app: targetApp,
+    authenticated: false,
+    connectUrl: authSession.redirectUrl,
+    tools: []
+  };
+}
+```
+
+### 14.2. Hosted Connect Link Generation & OAuth Suspension Flow
+When `authenticated: false`, Jasper does **not** fail the task or crash. Instead:
+1. **Agent State Suspension**: The executing agent pauses its loop and emits a structured `ActionSuspendedForAuth` event.
+2. **Interactive UI Card**: The Chat Interface renders an interactive authorization card directly in the message stream:
+   ```
+   ┌─────────────────────────────────────────────────────────────┐
+   │ 🧩 Linear Integration Required                              │
+   │ Jasper needs permission to create issues in your Linear     │
+   │ workspace to track bugs autonomously.                       │
+   │                                                             │
+   │ [ 🔗 Connect Linear ]                           [ Cancel ]  │
+   └─────────────────────────────────────────────────────────────┘
+   ```
+3. **Android Custom Tab Launch**: Tapping `[ 🔗 Connect Linear ]` opens the Composio hosted OAuth flow via Capacitor's Browser plugin (`Browser.open({ url: connectUrl })`).
+4. **Resumption via Deep Link / Polling**: Once the user approves, Composio receives the token, marks the account as `ACTIVE`, and redirects to `jasper://oauth-callback`. The agent runtime detects the status change, mounts the newly available tools, and seamlessly completes the pending action.
+
+### 14.3. Unified MCP Bridge & Precedence Ladder (Local First, Composio Fallback)
+Jasper unifies standard JSON-RPC Model Context Protocol (MCP) servers with Composio toolkits under a single virtual client, enforcing a strict **Precedence Ladder**:
+
+```
+                       NEED EXTERNAL TOOL / ACTION
+                                    │
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ Step 1: Check In-App Local Credentials & Custom MCPs    │
+       │         (e.g., GitHub authed via Projects Hub import,   │
+       │          or user-added custom MCP server)              │
+       └────────────────────────────┬───────────────────────────┘
+                                    │
+                     ┌──────────────┴──────────────┐
+                     ▼                             ▼
+              [ FOUND LOCALLY ]            [ NOT FOUND LOCALLY ]
+                     │                             │
+          Use existing local auth                  ▼
+          (e.g. GitHub Token, SSH,    ┌─────────────────────────────────┐
+           Custom Vercel MCP)         │ Step 2: Check Composio Catalog  │
+                                      │         & Connected Accounts    │
+                                      └────────────────┬────────────────┘
+                                                       │
+                                        ┌──────────────┴──────────────┐
+                                        ▼                             ▼
+                              [ Composio Connected ]      [ Composio Available ]
+                                        │                             │
+                                  Execute via             Generate Connect Link
+                                Composio Proxy            [ 🔗 Connect Tool ]
+```
+
+```ts
+export interface McpServerConfig {
+  id: string;
+  name: string;
+  type: 'custom_mcp' | 'composio';
+  enabled: boolean;
+  status: 'connected' | 'disconnected' | 'error';
+  transport?: 'stdio' | 'sse';
+  command?: string;
+  args?: string[];
+  composioAppName?: string;
+  connectedAccountId?: string;
+}
+
+export class UnifiedMcpBridge {
+  private activeServers: Map<string, McpServerConfig> = new Map();
+
+  /**
+   * Returns all active tools from both custom MCP servers and Composio
+   * formatted for the Claude Agent SDK tool-calling protocol.
+   */
+  async getAggregatedTools(): Promise<any[]> {
+    const tools: any[] = [];
+
+    for (const [id, server] of this.activeServers.entries()) {
+      if (!server.enabled) continue;
+
+      if (server.type === 'custom_mcp') {
+        const customTools = await this.fetchStdioMcpTools(server);
+        tools.push(...customTools);
+      } else if (server.type === 'composio') {
+        const composioTools = await this.fetchComposioTools(server);
+        tools.push(...composioTools);
+      }
+    }
+
+    return tools;
+  }
+}
+```
+
+### 14.4. State Management, Toggling & Credential Lifecycle
+The user maintains full sovereignty over connected tools:
+* **Storage Location**: Connected account metadata is recorded in SQLite at `~/.jasper/mcp/registry.json`. No sensitive access tokens or client secrets are stored unencrypted in plain text; Composio manages server-side refresh lifecycles, and local custom MCP credentials use Android EncryptedSharedPreferences (Keystore).
+* **Toggle & Revocation**:
+  * Toggling a tool off (`enabled: false`) immediately unbinds its action schemas from all sub-agents.
+  * Disconnecting an account calls `composio.connectedAccounts.delete(id)` to revoke the OAuth grant remotely and deletes the local record immediately.
+
+---
+
+## 15. Custom MCP Server Validation & Skills Installation Engine
+
+To support open ecosystem interoperability, Jasper allows developers to register arbitrary Model Context Protocol (MCP) endpoints and import custom domain skills.
+
+### 15.1. MCP Server Protocol Handshake Verification (`tools/list`)
+When a user adds an MCP tool via the `[+ Add]` modal (providing Tool Name, Endpoint URL, and Auth credentials if required), Jasper executes a verification handshake before saving:
+
+```ts
+export interface McpVerificationResult {
+  valid: boolean;
+  error?: string;
+  tools: Array<{ name: string; description: string; inputSchema: object }>;
+  iconUrl?: string;
+}
+
+export async function verifyMcpServer(url: string, authToken?: string): Promise<McpVerificationResult> {
+  try {
+    // 1. Establish SSE or HTTP POST handshake conforming to MCP spec
+    const client = new McpClient({
+      transport: new SseClientTransport(new URL(url), {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      })
+    });
+
+    await client.connect();
+
+    // 2. Query exposed tools list
+    const response = await client.listTools();
+    if (!response || !Array.isArray(response.tools)) {
+      return { valid: false, error: 'Server did not return a valid tools array.' };
+    }
+
+    // 3. Resolve logo/icon from server metadata or domain favicon
+    const iconUrl = await resolveServerIcon(url);
+
+    return {
+      valid: true,
+      tools: response.tools,
+      iconUrl
+    };
+  } catch (err: any) {
+    return { valid: false, error: err.message || 'Failed to connect to MCP endpoint.' };
+  }
+}
+```
+
+### 15.2. Automated Favicon & Brand Asset Resolution
+When custom MCP servers or APIs are mounted, Jasper automatically resolves a crisp SVG/PNG icon:
+1. **Server Metadata**: Checks if the MCP server manifest exposes an `icon` or `logo` property in its initialization schema.
+2. **Domain Favicon Fallback**: Extracts the hostname from the URL (e.g. `https://mcp.supabase.com` ➔ `supabase.com`) and resolves high-resolution icons via `https://icon.horse/icon/<domain>` or Google S2 favicon service.
+3. **Local Fallback**: If offline or unreachable, assigns a clean, themed monochrome network plug icon from Hugeicons.
+
+### 15.3. Dual Skill Installation Pipelines (Storage Upload vs. PRoot CLI `skills add`)
+Skills are modular instructions guiding *how* Jasper's sub-agents approach problems. The user can add skills through two distinct paths:
+
+1. **Option A: File Upload (`skill.md`)**:
+   * Uses Android's native file picker (`Capacitor.Plugins.FilePicker`) to let the user select any `.md` file from device storage or downloads.
+   * Prompts for a Skill Name.
+   * Sanitizes the content and writes the file into PRoot userspace:
+     `~/.jasper/skills/<sanitized-skill-name>/SKILL.md`
+   * Instantly re-indexes the skill manifest in memory without requiring an app restart.
+
+2. **Option B: PRoot CLI Command (`skills add`)**:
+   * User pastes a terminal installation command into the UI (e.g. `npx skills add vercel/nextjs-skill` or `git clone https://...`).
+   * Jasper's PTY multiplexer spawns an isolated bash execution inside the PRoot rootfs:
+     ```bash
+     cd ~/.jasper/skills && npx --yes skills add <package>
+     ```
+   * The modal streams the terminal output in real time so the user sees download progress and dependencies being fetched.
+   * Upon exit code `0`, Jasper parses the newly created skill directory and enables it in the skills catalog.
+
+### 15.4. Unified Git Credential Helper Hook (Seamless CLI & Blue Team Git Push)
+When a user authenticates with GitHub anywhere in the app (e.g. during repository import from the Projects Hub FAB, or via custom MCP/Composio):
+* Jasper extracts the OAuth access token or Personal Access Token (PAT).
+* Automatically injects credentials into the PRoot Linux Git credential helper:
+  ```bash
+  # Executed silently inside PRoot userspace:
+  git config --global credential.helper store
+  echo "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com" >> ~/.git-credentials
+  chmod 600 ~/.git-credentials
+  ```
+* **Result**:
+  * Any manual `git push origin main` executed by the user in the Mobile Terminal works instantly without credential prompts.
+  * Blue Team coding agents pushing automated feature branches or bugfixes execute `git push` seamlessly.
+  * Eliminates SSH key generation, passphrase dialogs, and authentication errors on mobile.
 
 ---
 
